@@ -6,8 +6,8 @@ import { useAtom, atom } from 'jotai';
 const topCanvas = atom(0);
 const leftCanvas = atom(0);
 
-const CANVAS_HEIGHT = 1000;
-const CANVAS_WIDTH = 1000;
+const CANVAS_HEIGHT = 4000;
+const CANVAS_WIDTH = 4000;
 
 const Canvas = () => {
   const [top, setTop] = useAtom(topCanvas);
@@ -51,6 +51,8 @@ const Canvas = () => {
   }, []);
 
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
+    if (!ctrlKey) return;
+
     const { clientX, clientY, deltaY } = e;
 
     // Track point mouse
@@ -77,9 +79,19 @@ const Canvas = () => {
       newYf = yf * scaleOut;
     }
 
-    // Find Tx and Ty
+    // Find Translate x and Translate y
     const Tx = xf - newXf;
     const Ty = yf - newYf;
+
+    const newTop = top + Ty;
+    const newLeft = left + Tx;
+
+    if (newLeft >= 0 || newTop >= 0) return;
+    if (
+      newLeft <= -(CANVAS_WIDTH * newZoom - windowW) ||
+      newTop <= -(CANVAS_HEIGHT * newZoom - windowH)
+    )
+      return;
 
     setZoom(newZoom);
     setTop((t) => t + Ty);
@@ -91,9 +103,7 @@ const Canvas = () => {
     <Box
       overflow="hidden"
       position="relative"
-      outline="3px solid red"
-      height={700}
-      width={800}
+      height={height}
       zIndex="10"
       ref={windowRef}
       onMouseMove={(e) => {
@@ -118,13 +128,13 @@ const Canvas = () => {
           height: CANVAS_HEIGHT * zoom,
           width: CANVAS_WIDTH * zoom,
         }}
-        background="url('https://www.rwsentosa.com/-/media/project/non-gaming/rwsentosa/attractions/dolphin-island/dolphin-island-dolphin-trek-1364x666.jpg?h=666&la=id-ID&w=1364&hash=334328B21785F0F1195A65E04A17743851D3CE91')"
+        background="gray.100"
         draggable={false}
         onWheel={handleWheel}
         position="relative"
         backgroundSize="cover"
       >
-        {/* <Box w="200px" h="200px" background="blue.200" position="absolute" top={1000} left={1000} /> */}
+        <Box w="5%" h="5%" background="blue.200" position="absolute" top="10%" left="40%" />
       </Box>
       {/* Zoom Indicator */}
       <Flex
