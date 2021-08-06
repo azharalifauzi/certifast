@@ -2,13 +2,12 @@ import { Box, Flex } from '@chakra-ui/react';
 import { useWindowSize, useMeasure } from 'react-use';
 import React, { useEffect, useState } from 'react';
 import { useAtom, atom } from 'jotai';
-import { calculateTopLeftAfterZoom } from 'helpers';
 
 const topCanvas = atom(0);
 const leftCanvas = atom(0);
 
-const CANVAS_HEIGHT = 4000;
-const CANVAS_WIDTH = 4000;
+const CANVAS_HEIGHT = 1000;
+const CANVAS_WIDTH = 1000;
 
 const Canvas = () => {
   const [top, setTop] = useAtom(topCanvas);
@@ -51,12 +50,50 @@ const Canvas = () => {
     );
   }, []);
 
+  const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
+    const { clientX, clientY, deltaY } = e;
+
+    // Track point mouse
+    const xf = clientX - left;
+    const yf = clientY - top;
+
+    // scale
+    const delta = deltaY;
+    const scaleIn = 1.2;
+    const scaleOut = 1 / scaleIn;
+    let newZoom;
+
+    if (delta < 0) newZoom = zoom * scaleIn;
+    else newZoom = zoom * scaleOut;
+
+    // Scale Track point and then get new point after scale
+    let newXf;
+    let newYf;
+    if (delta < 0) {
+      newXf = scaleIn * xf;
+      newYf = scaleIn * yf;
+    } else {
+      newXf = xf * scaleOut;
+      newYf = yf * scaleOut;
+    }
+
+    // Find Tx and Ty
+    const Tx = xf - newXf;
+    const Ty = yf - newYf;
+
+    setZoom(newZoom);
+    setTop((t) => t + Ty);
+    setLeft((l) => l + Tx);
+  };
+
   return (
     // Window Component
     <Box
       overflow="hidden"
       position="relative"
-      height={height}
+      outline="3px solid red"
+      height={700}
+      width={800}
       zIndex="10"
       ref={windowRef}
       onMouseMove={(e) => {
@@ -72,84 +109,22 @@ const Canvas = () => {
       onMouseDown={() => {
         setTriggerPan(true);
       }}
-      onWheel={(e) => {
-        const { offsetX, offsetY } = e.nativeEvent;
-
-        if (ctrlKey) {
-          // zoom in
-          if (e.deltaY < 0 && zoom < 2.0) {
-            let { x, y } = calculateTopLeftAfterZoom(
-              top,
-              left,
-              CANVAS_WIDTH * zoom,
-              CANVAS_HEIGHT * zoom,
-              offsetX,
-              offsetY,
-              (zoom + 0.01) / zoom
-            );
-
-            if (x / top > 1 && x / top < 1.04) {
-              const temp = x;
-              x = y;
-              y = temp;
-            }
-
-            const nextCanvasW = CANVAS_WIDTH * (zoom + 0.01);
-            const nextCanvasH = CANVAS_HEIGHT * (zoom + 0.01);
-
-            if (x < 0 && x + nextCanvasW > windowW) setLeft(x);
-            else setLeft(windowW - nextCanvasW);
-            if (y < 0 && y + nextCanvasH > windowH) setTop(y);
-            else setTop(windowH - nextCanvasH);
-
-            setZoom((z) => z + 0.01);
-          }
-          // zoom out
-          else if (e.deltaY > 0 && zoom > 0.7) {
-            let { x, y } = calculateTopLeftAfterZoom(
-              top,
-              left,
-              CANVAS_WIDTH * zoom,
-              CANVAS_HEIGHT * zoom,
-              offsetX,
-              offsetY,
-              (zoom - 0.01) / zoom
-            );
-
-            if (top / x > 1 && top / x < 1.04) {
-              const temp = x;
-              x = y;
-              y = temp;
-            }
-
-            const nextCanvasW = CANVAS_WIDTH * (zoom - 0.01);
-            const nextCanvasH = CANVAS_HEIGHT * (zoom - 0.01);
-
-            if (x < 0 && x + nextCanvasW > windowW) setLeft(x);
-            else setLeft(windowW - nextCanvasW);
-            if (y < 0 && y + nextCanvasH > windowH) setTop(y);
-            else setTop(windowH - nextCanvasH);
-
-            setZoom((z) => z - 0.01);
-          }
-        }
-      }}
     >
-      <Box position="absolute" top="0" left="0" height="100%" width="100%" zIndex="100" />
       {/* Canvas Component */}
       <Box
         ref={canvasRef}
         style={{
-          top,
-          left,
+          transform: `translate(${left}px, ${top}px)`,
           height: CANVAS_HEIGHT * zoom,
           width: CANVAS_WIDTH * zoom,
         }}
-        position="absolute"
-        background="gray.200"
+        background="url('https://www.rwsentosa.com/-/media/project/non-gaming/rwsentosa/attractions/dolphin-island/dolphin-island-dolphin-trek-1364x666.jpg?h=666&la=id-ID&w=1364&hash=334328B21785F0F1195A65E04A17743851D3CE91')"
         draggable={false}
+        onWheel={handleWheel}
+        position="relative"
+        backgroundSize="cover"
       >
-        <Box w="5%" h="5%" background="blue.200" position="absolute" top={1000} left={1000} />
+        {/* <Box w="200px" h="200px" background="blue.200" position="absolute" top={1000} left={1000} /> */}
       </Box>
       {/* Zoom Indicator */}
       <Flex
