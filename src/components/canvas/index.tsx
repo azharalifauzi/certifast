@@ -28,12 +28,15 @@ const Canvas = () => {
   const [canvasRef, { width: canvasW, height: canvasH }] = useMeasure<HTMLDivElement>();
 
   useMount(() => {
-    setTimeout(() => {
-      setTop(-(CANVAS_HEIGHT * zoom - height) / 2);
-      setLeft(-(CANVAS_WIDTH * zoom - width + 320 - 64) / 2);
+    setTimeout(
+      () => {
+        setTop(-(CANVAS_HEIGHT * zoom - height) / 2);
+        setLeft(-(CANVAS_WIDTH * zoom - width + 320 - 64) / 2);
 
-      setInitialized(true);
-    }, 100);
+        setInitialized(true);
+      },
+      import.meta.env.DEV ? 100 : 1000
+    );
   });
 
   useEffect(() => {
