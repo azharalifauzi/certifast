@@ -1,5 +1,5 @@
 import React from 'react';
-import { Canvas, Sidebar } from 'components';
+import { Canvas, Sidebar, Toolbar } from 'components';
 import './App.css';
 
 function App() {
@@ -7,6 +7,7 @@ function App() {
     <div className="App">
       <Canvas />
       <Sidebar />
+      <Toolbar />
     </div>
   );
 }

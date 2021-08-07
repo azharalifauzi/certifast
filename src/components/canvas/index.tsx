@@ -140,7 +140,7 @@ const Canvas = () => {
       <Flex
         position="absolute"
         bottom="6"
-        left="6"
+        left="24"
         background="rgba(0,0,0, .4)"
         color="white"
         width="16"
