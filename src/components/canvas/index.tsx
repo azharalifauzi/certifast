@@ -1,24 +1,40 @@
-import { Box, Flex } from '@chakra-ui/react';
-import { useWindowSize, useMeasure } from 'react-use';
+import { Box, Flex, Image } from '@chakra-ui/react';
+import { useWindowSize, useMeasure, useMount } from 'react-use';
 import React, { useEffect, useState } from 'react';
 import { useAtom, atom } from 'jotai';
-
-const topCanvas = atom(0);
-const leftCanvas = atom(0);
+import { Loading } from 'components';
+import CanvasText from './text';
 
 const CANVAS_HEIGHT = 7000;
 const CANVAS_WIDTH = 7000;
 
+const topCanvas = atom(CANVAS_HEIGHT / 2);
+const leftCanvas = atom(CANVAS_WIDTH / 2);
+export const zoomCanvas = atom(1.0);
+
+const widthInCanvas = (w: number): string => `${(w / CANVAS_WIDTH) * 100}%`;
+const heightInCanvas = (h: number): string => `${(h / CANVAS_HEIGHT) * 100}%`;
+
 const Canvas = () => {
   const [top, setTop] = useAtom(topCanvas);
   const [left, setLeft] = useAtom(leftCanvas);
-  const { height } = useWindowSize();
+  const [zoom, setZoom] = useAtom(zoomCanvas);
+  const { height, width } = useWindowSize();
+  const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
   const [ctrlKey, setCtrlKey] = useState<boolean>(false);
   const [spaceKey, setSpaceKey] = useState<boolean>(false);
-  const [zoom, setZoom] = useState<number>(1.0);
   const [windowRef, { width: windowW, height: windowH }] = useMeasure<HTMLDivElement>();
   const [canvasRef, { width: canvasW, height: canvasH }] = useMeasure<HTMLDivElement>();
+
+  useMount(() => {
+    setTimeout(() => {
+      setTop(-(CANVAS_HEIGHT * zoom - height) / 2);
+      setLeft(-(CANVAS_WIDTH * zoom - width + 320 - 64) / 2);
+
+      setInitialized(true);
+    }, 100);
+  });
 
   useEffect(() => {
     if (spaceKey && !triggerPan) document.body.style.cursor = 'grab';
@@ -98,6 +114,19 @@ const Canvas = () => {
     setLeft((l) => l + Tx);
   };
 
+  if (!initialized)
+    return (
+      <Flex
+        background="gray.100"
+        height={height}
+        w="calc(100% - 320px)"
+        justifyContent="center"
+        alignItems="center"
+      >
+        <Loading />
+      </Flex>
+    );
+
   return (
     // Window Component
     <Box
@@ -135,6 +164,24 @@ const Canvas = () => {
         backgroundSize="cover"
       >
         <Box w="1%" h="1%" background="blue.200" position="absolute" top="20%" left="20%" />
+        <Box
+          w={widthInCanvas(640)}
+          h={heightInCanvas(481)}
+          position="absolute"
+          top="50%"
+          left="50%"
+          transform="translate(-50%, -50%)"
+          userSelect="none"
+        >
+          <Image
+            height="100%"
+            width="100%"
+            src="https://i.pinimg.com/originals/b4/4c/10/b44c10ec21fb252e4fe1fc8f7deca2c5.png"
+            draggable={false}
+            userSelect="none"
+          />
+          <CanvasText id="test-1" />
+        </Box>
       </Box>
       {/* Zoom Indicator */}
       <Flex
