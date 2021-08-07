@@ -6,8 +6,8 @@ import { useAtom, atom } from 'jotai';
 const topCanvas = atom(0);
 const leftCanvas = atom(0);
 
-const CANVAS_HEIGHT = 4000;
-const CANVAS_WIDTH = 4000;
+const CANVAS_HEIGHT = 7000;
+const CANVAS_WIDTH = 7000;
 
 const Canvas = () => {
   const [top, setTop] = useAtom(topCanvas);
@@ -134,13 +134,13 @@ const Canvas = () => {
         position="relative"
         backgroundSize="cover"
       >
-        <Box w="5%" h="5%" background="blue.200" position="absolute" top="10%" left="40%" />
+        <Box w="1%" h="1%" background="blue.200" position="absolute" top="20%" left="20%" />
       </Box>
       {/* Zoom Indicator */}
       <Flex
         position="absolute"
         bottom="6"
-        right="6"
+        left="6"
         background="rgba(0,0,0, .4)"
         color="white"
         width="16"
