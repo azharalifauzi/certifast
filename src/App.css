@@ -1,3 +1,26 @@
 body {
   overflow: hidden;
 }
+
+.file-drop {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.file-drop .file-drop-target {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.file-drop .file-drop-target.file-drop-dragging-over-frame {
+  /* overlay a black mask when dragging over the frame */
+  border: none;
+  background-color: rgba(0, 0, 0, 0.15);
+  box-shadow: none;
+  z-index: 50;
+  opacity: 1;
+}

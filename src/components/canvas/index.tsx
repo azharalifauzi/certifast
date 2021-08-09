@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useAtom, atom } from 'jotai';
 import { Loading } from 'components';
 import CanvasText from './text';
+import { certifTemplate } from 'gstates';
 
 const CANVAS_HEIGHT = 7000;
 const CANVAS_WIDTH = 7000;
@@ -19,6 +20,7 @@ const Canvas = () => {
   const [top, setTop] = useAtom(topCanvas);
   const [left, setLeft] = useAtom(leftCanvas);
   const [zoom, setZoom] = useAtom(zoomCanvas);
+  const [template] = useAtom(certifTemplate);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
@@ -168,8 +170,8 @@ const Canvas = () => {
       >
         <Box w="1%" h="1%" background="blue.200" position="absolute" top="20%" left="20%" />
         <Box
-          w={widthInCanvas(640)}
-          h={heightInCanvas(481)}
+          w={widthInCanvas(template.width)}
+          h={heightInCanvas(template.height)}
           position="absolute"
           top="50%"
           left="50%"
@@ -179,7 +181,7 @@ const Canvas = () => {
           <Image
             height="100%"
             width="100%"
-            src="https://i.pinimg.com/originals/b4/4c/10/b44c10ec21fb252e4fe1fc8f7deca2c5.png"
+            src={template.url}
             draggable={false}
             userSelect="none"
           />
