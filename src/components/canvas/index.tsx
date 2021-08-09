@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useAtom, atom } from 'jotai';
 import { Loading } from 'components';
 import CanvasText from './text';
-import { certifTemplate } from 'gstates';
+import { canvasObjects, certifTemplate } from 'gstates';
 
 const CANVAS_HEIGHT = 7000;
 const CANVAS_WIDTH = 7000;
@@ -21,6 +21,7 @@ const Canvas = () => {
   const [left, setLeft] = useAtom(leftCanvas);
   const [zoom, setZoom] = useAtom(zoomCanvas);
   const [template] = useAtom(certifTemplate);
+  const [cObjects] = useAtom(canvasObjects);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
@@ -185,6 +186,11 @@ const Canvas = () => {
             draggable={false}
             userSelect="none"
           />
+          {Object.values(cObjects).map(({ type, data }) => {
+            if (type === 'text') return <CanvasText id={data.id} />;
+
+            return null;
+          })}
           <CanvasText id="test-1" />
         </Box>
       </Box>
