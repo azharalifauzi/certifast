@@ -4,7 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { useAtom, atom } from 'jotai';
 import { Loading } from 'components';
 import CanvasText from './text';
-import { canvasObjects, certifTemplate } from 'gstates';
+import {
+  canvasObjects,
+  certifTemplate,
+  mousePosRelativeToTemplate as mousePosRelativeToTemplateAtom,
+  activeToolbar as activeToolbarAtom,
+  selectedObject,
+} from 'gstates';
+import { v4 as uuid } from 'uuid';
 
 const CANVAS_HEIGHT = 7000;
 const CANVAS_WIDTH = 7000;
@@ -21,7 +28,12 @@ const Canvas = () => {
   const [left, setLeft] = useAtom(leftCanvas);
   const [zoom, setZoom] = useAtom(zoomCanvas);
   const [template] = useAtom(certifTemplate);
-  const [cObjects] = useAtom(canvasObjects);
+  const [cObjects, setCObjects] = useAtom(canvasObjects);
+  const [mousePosRelativeToTemplate, setMousePosRelativeToTemplate] = useAtom(
+    mousePosRelativeToTemplateAtom
+  );
+  const [activeToolbar] = useAtom(activeToolbarAtom);
+  const [selected, setSelected] = useAtom(selectedObject);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
@@ -45,8 +57,9 @@ const Canvas = () => {
   useEffect(() => {
     if (spaceKey && !triggerPan) document.body.style.cursor = 'grab';
     else if (spaceKey && triggerPan) document.body.style.cursor = 'grabbing';
+    else if (activeToolbar === 'text') document.body.style.cursor = 'text';
     else document.body.style.cursor = 'default';
-  }, [triggerPan, spaceKey]);
+  }, [triggerPan, spaceKey, activeToolbar]);
 
   useEffect(() => {
     window.addEventListener('mouseup', () => {
@@ -71,6 +84,29 @@ const Canvas = () => {
       { passive: false }
     );
   }, []);
+
+  // mouse position listener relative to certif template
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!selected) {
+        const { clientX, clientY } = e;
+
+        const relativeToCanvasX = (CANVAS_WIDTH / 2 - template.width / 2) * zoom;
+        const relativeToCanvasY = (CANVAS_HEIGHT / 2 - template.height / 2) * zoom;
+
+        const newPosition = {
+          x: -(left + relativeToCanvasX - clientX),
+          y: -(top + relativeToCanvasY - clientY),
+        };
+
+        setMousePosRelativeToTemplate(newPosition);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [left]);
 
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
     if (!ctrlKey) return;
@@ -118,6 +154,39 @@ const Canvas = () => {
     setZoom(newZoom);
     setTop((t) => t + Ty);
     setLeft((l) => l + Tx);
+  };
+
+  const handleAddObject = () => {
+    let count = 0;
+    const newId = uuid();
+
+    if (activeToolbar === 'text' && !spaceKey) {
+      Object.values(cObjects).forEach(({ type }) => {
+        if (type === 'text') count++;
+      });
+
+      setCObjects({
+        ...cObjects,
+        [newId]: {
+          type: 'text',
+          data: {
+            align: 'center',
+            color: '#000',
+            family: 'Times New Roman',
+            id: newId,
+            size: 32,
+            text: `Text-${count + 1}`,
+            weight: '400',
+            x: mousePosRelativeToTemplate.x,
+            y: mousePosRelativeToTemplate.y - (32 * 1.2) / 2,
+          },
+        },
+      });
+    }
+  };
+
+  const handleDeselect = () => {
+    if (!spaceKey) setSelected('');
   };
 
   if (!initialized)
@@ -168,6 +237,8 @@ const Canvas = () => {
         onWheel={handleWheel}
         position="relative"
         backgroundSize="cover"
+        onClick={handleAddObject}
+        userSelect="none"
       >
         <Box w="1%" h="1%" background="blue.200" position="absolute" top="20%" left="20%" />
         <Box
@@ -178,6 +249,7 @@ const Canvas = () => {
           left="50%"
           transform="translate(-50%, -50%)"
           userSelect="none"
+          zIndex="10"
         >
           <Image
             height="100%"
@@ -185,15 +257,37 @@ const Canvas = () => {
             src={template.url}
             draggable={false}
             userSelect="none"
+            zIndex="0"
           />
           {Object.values(cObjects).map(({ type, data }) => {
-            if (type === 'text') return <CanvasText id={data.id} />;
+            if (type === 'text') return <CanvasText key={data.id} id={data.id} />;
 
             return null;
           })}
-          <CanvasText id="test-1" />
+
+          {/* Background Layer Click Outside */}
+          <Box
+            position="absolute"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            zIndex="0"
+            onClick={handleDeselect}
+          ></Box>
         </Box>
+        {/* Background Layer Click Outside */}
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          zIndex="0"
+          onClick={handleDeselect}
+        ></Box>
       </Box>
+
       {/* Zoom Indicator */}
       <Flex
         position="absolute"

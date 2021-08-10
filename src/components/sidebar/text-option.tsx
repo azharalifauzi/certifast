@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   Input,
   InputGroup,
@@ -12,10 +12,16 @@ import {
   Text,
 } from '@chakra-ui/react';
 import ColorPicker from 'components/color-picker';
+import { selectedObject, canvasObjects } from 'gstates';
+import { useAtom } from 'jotai';
 
 const TextOption = () => {
-  const [color, setColor] = useState<string>('#000');
-  const [fontSize, setFontSize] = useState<number>(12);
+  const [selected] = useAtom(selectedObject);
+  const [cObjects, setCObjects] = useAtom(canvasObjects);
+
+  const { data } = useMemo(() => cObjects[selected] ?? { data: {} }, [selected, cObjects]);
+
+  if (!selected) return null;
 
   return (
     <>
@@ -30,8 +36,16 @@ const TextOption = () => {
             <Input
               type="number"
               size="sm"
-              value={fontSize}
-              onChange={(e) => setFontSize(e.target.valueAsNumber)}
+              value={Number(data.size.toFixed(2).replace(',', '.'))}
+              onChange={(e) =>
+                setCObjects((obj) => {
+                  const newObj = { ...obj };
+
+                  newObj[selected].data.size = e.target.valueAsNumber;
+
+                  return newObj;
+                })
+              }
             />
           </Grid>
           <Select size="sm" value="center">
@@ -48,13 +62,23 @@ const TextOption = () => {
         <InputGroup size="sm">
           <Popover placement="left">
             <PopoverTrigger>
-              <Box as="button" h="8" w="8" style={{ background: color }} />
+              <Box as="button" h="8" w="8" style={{ background: data.color }} />
             </PopoverTrigger>
             <PopoverContent>
-              <ColorPicker color={color} onChange={(c) => setColor(c.hex)} />
+              <ColorPicker
+                color={data.color}
+                onChange={(c) =>
+                  setCObjects((obj) => {
+                    const newObj = { ...obj };
+
+                    newObj[selected].data.color = c.hex;
+                    return newObj;
+                  })
+                }
+              />
             </PopoverContent>
           </Popover>
-          <Input disabled placeholder="#000" value={color} textTransform="uppercase" />
+          <Input disabled placeholder="#000" value={data.color} textTransform="uppercase" />
         </InputGroup>
       </Box>
     </>
