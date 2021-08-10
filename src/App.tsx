@@ -32,7 +32,9 @@ function App() {
       img.onload = function () {
         setTemplate({
           file: files[0],
+          // @ts-ignore
           height: this.height,
+          // @ts-ignore
           width: this.width,
           url: objectUrl,
         });

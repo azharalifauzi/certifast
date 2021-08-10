@@ -9,6 +9,7 @@ import {
   certifTemplate,
   mousePosRelativeToTemplate as mousePosRelativeToTemplateAtom,
   activeToolbar as activeToolbarAtom,
+  selectedObject,
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
 
@@ -32,6 +33,7 @@ const Canvas = () => {
     mousePosRelativeToTemplateAtom
   );
   const [activeToolbar] = useAtom(activeToolbarAtom);
+  const [selected, setSelected] = useAtom(selectedObject);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
@@ -86,17 +88,19 @@ const Canvas = () => {
   // mouse position listener relative to certif template
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      const { clientX, clientY } = e;
+      if (!selected) {
+        const { clientX, clientY } = e;
 
-      const relativeToCanvasX = (CANVAS_WIDTH / 2 - template.width / 2) * zoom;
-      const relativeToCanvasY = (CANVAS_HEIGHT / 2 - template.height / 2) * zoom;
+        const relativeToCanvasX = (CANVAS_WIDTH / 2 - template.width / 2) * zoom;
+        const relativeToCanvasY = (CANVAS_HEIGHT / 2 - template.height / 2) * zoom;
 
-      const newPosition = {
-        x: -(left + relativeToCanvasX - clientX),
-        y: -(top + relativeToCanvasY - clientY),
-      };
+        const newPosition = {
+          x: -(left + relativeToCanvasX - clientX),
+          y: -(top + relativeToCanvasY - clientY),
+        };
 
-      setMousePosRelativeToTemplate(newPosition);
+        setMousePosRelativeToTemplate(newPosition);
+      }
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -153,9 +157,14 @@ const Canvas = () => {
   };
 
   const handleAddObject = () => {
+    let count = 0;
     const newId = uuid();
 
     if (activeToolbar === 'text' && !spaceKey) {
+      Object.values(cObjects).forEach(({ type }) => {
+        if (type === 'text') count++;
+      });
+
       setCObjects({
         ...cObjects,
         [newId]: {
@@ -166,14 +175,18 @@ const Canvas = () => {
             family: 'Times New Roman',
             id: newId,
             size: 32,
-            text: 'Text',
+            text: `Text-${count + 1}`,
             weight: '400',
             x: mousePosRelativeToTemplate.x,
-            y: mousePosRelativeToTemplate.y - 16,
+            y: mousePosRelativeToTemplate.y - (32 * 1.2) / 2,
           },
         },
       });
     }
+  };
+
+  const handleDeselect = () => {
+    if (!spaceKey) setSelected('');
   };
 
   if (!initialized)
@@ -225,6 +238,7 @@ const Canvas = () => {
         position="relative"
         backgroundSize="cover"
         onClick={handleAddObject}
+        userSelect="none"
       >
         <Box w="1%" h="1%" background="blue.200" position="absolute" top="20%" left="20%" />
         <Box
@@ -235,6 +249,7 @@ const Canvas = () => {
           left="50%"
           transform="translate(-50%, -50%)"
           userSelect="none"
+          zIndex="10"
         >
           <Image
             height="100%"
@@ -242,14 +257,37 @@ const Canvas = () => {
             src={template.url}
             draggable={false}
             userSelect="none"
+            zIndex="0"
           />
           {Object.values(cObjects).map(({ type, data }) => {
-            if (type === 'text') return <CanvasText id={data.id} />;
+            if (type === 'text') return <CanvasText key={data.id} id={data.id} />;
 
             return null;
           })}
+
+          {/* Background Layer Click Outside */}
+          <Box
+            position="absolute"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            zIndex="0"
+            onClick={handleDeselect}
+          ></Box>
         </Box>
+        {/* Background Layer Click Outside */}
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          bottom="0"
+          zIndex="0"
+          onClick={handleDeselect}
+        ></Box>
       </Box>
+
       {/* Zoom Indicator */}
       <Flex
         position="absolute"

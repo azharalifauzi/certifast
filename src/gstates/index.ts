@@ -35,6 +35,7 @@ export const canvasObjects = atom<Record<string, CanvasObject>>({});
 
 export const mousePosRelativeToTemplate = atom<{ x: number; y: number }>({ x: 0, y: 0 });
 
-type ActiveToolbar = 'text' | 'move';
+type ActiveToolbar = 'text' | 'move' | 'resize';
 
 export const activeToolbar = atom<ActiveToolbar>('move');
+export const selectedObject = atom<string>('');
