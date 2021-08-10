@@ -26,10 +26,8 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
 
       const newCObjects = { ...cObjects };
 
-      newCObjects[id].data.x = textData.x * scaleFactor;
-      newCObjects[id].data.y = textData.y * scaleFactor;
-
-      console.log(newCObjects);
+      newCObjects[id].data.x *= scaleFactor;
+      newCObjects[id].data.y *= scaleFactor;
 
       setCObjects(newCObjects);
       setPrevZoom(zoom);
@@ -80,7 +78,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       outline="2px solid"
       outlineColor={selected ? 'blue.400' : 'transparent'}
       onClick={() => setSelected(true)}
-      fontSize={64 * zoom}
+      fontSize={textData.size * zoom}
       onMouseDown={(e) => {
         setMousePos({
           x: e.clientX - textData.x,

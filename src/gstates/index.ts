@@ -1,4 +1,5 @@
 import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 
 type CertifTemplate = {
   file: File | null;
@@ -6,7 +7,12 @@ type CertifTemplate = {
   height: number;
   url: string;
 };
-export const certifTemplate = atom<CertifTemplate>({ file: null, width: 0, height: 0, url: '' });
+export const certifTemplate = atomWithStorage<CertifTemplate>('certifTemplate', {
+  file: null,
+  width: 0,
+  height: 0,
+  url: '',
+});
 
 type CanvasTextMeta = {
   x: number;
@@ -25,19 +31,10 @@ type CanvasObject = {
   data: CanvasTextMeta;
 };
 
-export const canvasObjects = atom<Record<string, CanvasObject>>({
-  'test-1': {
-    type: 'text',
-    data: {
-      x: 0,
-      y: 0,
-      text: 'Test 1',
-      size: 64,
-      weight: 'regular',
-      align: 'left',
-      family: 'Courier New',
-      color: '#000',
-      id: 'test-1',
-    },
-  },
-});
+export const canvasObjects = atom<Record<string, CanvasObject>>({});
+
+export const mousePosRelativeToTemplate = atom<{ x: number; y: number }>({ x: 0, y: 0 });
+
+type ActiveToolbar = 'text' | 'move';
+
+export const activeToolbar = atom<ActiveToolbar>('move');
