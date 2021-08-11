@@ -3,6 +3,8 @@ import { canvasObjects, activeToolbar as activeToolbarAtom, selectedObject } fro
 import { useAtom } from 'jotai';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMemo } from 'react';
+import { useMount } from 'react-use';
+import WebFont from 'webfontloader';
 import { zoomCanvas } from '.';
 
 interface CanvasTextProps {
@@ -23,6 +25,14 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
 
   const { data: textData } = useMemo(() => cObjects[id], [id, cObjects]);
 
+  useMount(() => {
+    WebFont.load({
+      google: {
+        families: [cObjects[id].data.family],
+      },
+    });
+  });
+
   useEffect(() => {
     if (zoom) {
       const scaleFactor = zoom / prevZoom;
@@ -36,8 +46,6 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       setPrevZoom(zoom);
     }
   }, [zoom]);
-
-  console.log(resize);
 
   useEffect(() => {
     const handleMouseUp = () => {
@@ -79,6 +87,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
         const { [id]: _, ...newCObjects } = cObjects;
 
         setCObjects(newCObjects);
+        setSelected('');
       }
     };
 
@@ -89,6 +98,8 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
 
   return (
     <Box
+      fontFamily={textData.family}
+      fontWeight={textData.weight}
       _hover={{
         textDecoration: 'underline',
         textDecorationColor: 'blue.400',

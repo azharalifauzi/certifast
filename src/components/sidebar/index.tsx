@@ -55,8 +55,7 @@ const Sidebar = () => {
                 setCObjects({});
                 setCertifTemplate({
                   ...certifTemplate,
-                  file: null,
-                  url: '',
+                  file: '',
                 });
               }}
               variant="outline"

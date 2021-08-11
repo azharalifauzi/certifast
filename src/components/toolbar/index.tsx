@@ -3,23 +3,43 @@ import { useAtom } from 'jotai';
 import React from 'react';
 import { BsCursor, BsCursorText } from 'react-icons/bs';
 import { activeToolbar as activeToolbarAtom } from 'gstates';
+import { useEffect } from 'react';
 
 const Toolbar = () => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'v':
+          setActiveToolbar('move');
+          break;
+        case 't':
+          setActiveToolbar('text');
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keypress', handleKeyPress);
+
+    return () => window.removeEventListener('keypress', handleKeyPress);
+  }, []);
 
   return (
     <Box background="gray.800" top="0" bottom="0" left="0" w="14" position="fixed" zIndex="100">
       <Stack spacing="0">
         <ToolbarItem
-          isActive={activeToolbar === 'move'}
-          label="Move"
+          isActive={['move', 'resize'].includes(activeToolbar)}
+          label="Move (V)"
           onClick={() => setActiveToolbar('move')}
         >
           <BsCursor color="white" size="24" style={{ transform: 'rotate(-90deg)' }} />
         </ToolbarItem>
         <ToolbarItem
           isActive={activeToolbar === 'text'}
-          label="Add Text"
+          label="Dynamic Text (T)"
           onClick={() => setActiveToolbar('text')}
         >
           <BsCursorText color="white" size="24" />
