@@ -25,13 +25,21 @@ const TextOption = () => {
 
   const { data } = useMemo(() => cObjects[selected] ?? { data: {} }, [selected, cObjects]);
 
-  const { data: fontOptions } = useQuery<GoogleFont[]>('fonts', async () => {
+  const { data: fontOptions } = useQuery<GoogleFont[]>(['fonts', selected, cObjects], async () => {
     const apiKey = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
     const res = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`);
 
     const data = await res.json();
+    const items: GoogleFont[] = data.items;
 
-    return data.items;
+    if (selected) {
+      const font = items?.find(({ family }) => family === cObjects[selected].data.family);
+      const weightOpt = font?.variants.filter((value) => !value.includes('italic'));
+
+      setWeightOptions(weightOpt ?? []);
+    }
+
+    return items;
   });
 
   const handleChangeFont: React.ChangeEventHandler<HTMLSelectElement> = (e) => {
@@ -44,15 +52,17 @@ const TextOption = () => {
       google: {
         families: [value],
       },
+      active: () => {
+        setCObjects((obj) => {
+          const newObj = { ...obj };
+
+          newObj[selected].data.family = value;
+          return newObj;
+        });
+      },
     });
 
     setWeightOptions(weightOpt ?? []);
-    setCObjects((obj) => {
-      const newObj = { ...obj };
-
-      newObj[selected].data.family = value;
-      return newObj;
-    });
   };
 
   const handleChangeFontWeight: React.ChangeEventHandler<HTMLSelectElement> = (e) => {

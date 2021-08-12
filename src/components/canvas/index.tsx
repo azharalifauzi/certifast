@@ -13,7 +13,6 @@ import {
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage } from 'jotai/utils';
-import { useMemo } from 'react';
 
 const CANVAS_HEIGHT = 7000;
 const CANVAS_WIDTH = 7000;
@@ -77,15 +76,17 @@ const Canvas = () => {
       if (e.key === 'Control') setCtrlKey(false);
       if (e.key === ' ') setSpaceKey(false);
     });
-
-    window.addEventListener(
-      'wheel',
-      (e) => {
-        e.preventDefault();
-      },
-      { passive: false }
-    );
   }, []);
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (ctrlKey) e.preventDefault();
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [ctrlKey]);
 
   // mouse position listener relative to certif template
   useEffect(() => {

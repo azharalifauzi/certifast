@@ -12,7 +12,7 @@ export const certifTemplate = atomWithStorage<CertifTemplate>('certifTemplate', 
   height: 0,
 });
 
-type CanvasTextMeta = {
+export type CanvasTextMeta = {
   x: number;
   y: number;
   text: string;
@@ -37,3 +37,5 @@ type ActiveToolbar = 'text' | 'move' | 'resize';
 
 export const activeToolbar = atom<ActiveToolbar>('move');
 export const selectedObject = atom<string>('');
+
+export const dynamicTextInput = atomWithStorage<Record<string, string[]>>('dynamicTextInput', {});
