@@ -12,13 +12,14 @@ import {
   selectedObject,
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
+import { atomWithStorage } from 'jotai/utils';
 
 const CANVAS_HEIGHT = 7000;
 const CANVAS_WIDTH = 7000;
 
 const topCanvas = atom(CANVAS_HEIGHT / 2);
 const leftCanvas = atom(CANVAS_WIDTH / 2);
-export const zoomCanvas = atom(1.0);
+export const zoomCanvas = atomWithStorage('zoom', 1.0);
 
 const widthInCanvas = (w: number): string => `${(w / CANVAS_WIDTH) * 100}%`;
 const heightInCanvas = (h: number): string => `${(h / CANVAS_HEIGHT) * 100}%`;
@@ -75,15 +76,17 @@ const Canvas = () => {
       if (e.key === 'Control') setCtrlKey(false);
       if (e.key === ' ') setSpaceKey(false);
     });
-
-    window.addEventListener(
-      'wheel',
-      (e) => {
-        e.preventDefault();
-      },
-      { passive: false }
-    );
   }, []);
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (ctrlKey) e.preventDefault();
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [ctrlKey]);
 
   // mouse position listener relative to certif template
   useEffect(() => {
@@ -106,7 +109,7 @@ const Canvas = () => {
     window.addEventListener('mousemove', handleMouseMove);
 
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [left]);
+  }, [left, top, template.width, template.height, selected, setMousePosRelativeToTemplate]);
 
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
     if (!ctrlKey) return;
@@ -254,7 +257,7 @@ const Canvas = () => {
           <Image
             height="100%"
             width="100%"
-            src={template.url}
+            src={template.file}
             draggable={false}
             userSelect="none"
             zIndex="0"

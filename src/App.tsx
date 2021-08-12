@@ -11,7 +11,7 @@ function App() {
   const [template, setTemplate] = useAtom(certifTemplate);
   const toast = useToast();
 
-  const handleFileDrop = (files: FileList | null, e: React.DragEvent<HTMLDivElement>) => {
+  const handleFileDrop = async (files: FileList | null, e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (files) {
       if (!files[0].type.includes('png')) {
@@ -26,21 +26,31 @@ function App() {
         return;
       }
 
+      const imgBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = function () {
+          resolve(reader.result);
+        };
+
+        reader.onerror = () => {
+          reject('');
+        };
+
+        reader.readAsDataURL(files[0]);
+      });
+
       const img = new Image();
-      const objectUrl = URL.createObjectURL(files[0]);
 
       img.onload = function () {
         setTemplate({
-          file: files[0],
+          file: imgBase64 as string,
           // @ts-ignore
           height: this.height,
           // @ts-ignore
           width: this.width,
-          url: objectUrl,
         });
       };
-
-      img.src = objectUrl;
     }
   };
 

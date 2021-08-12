@@ -2,19 +2,17 @@ import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
 type CertifTemplate = {
-  file: File | null;
+  file: string;
   width: number;
   height: number;
-  url: string;
 };
 export const certifTemplate = atomWithStorage<CertifTemplate>('certifTemplate', {
-  file: null,
+  file: '',
   width: 0,
   height: 0,
-  url: '',
 });
 
-type CanvasTextMeta = {
+export type CanvasTextMeta = {
   x: number;
   y: number;
   text: string;
@@ -31,7 +29,7 @@ type CanvasObject = {
   data: CanvasTextMeta;
 };
 
-export const canvasObjects = atom<Record<string, CanvasObject>>({});
+export const canvasObjects = atomWithStorage<Record<string, CanvasObject>>('cObjects', {});
 
 export const mousePosRelativeToTemplate = atom<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -39,3 +37,5 @@ type ActiveToolbar = 'text' | 'move' | 'resize';
 
 export const activeToolbar = atom<ActiveToolbar>('move');
 export const selectedObject = atom<string>('');
+
+export const dynamicTextInput = atomWithStorage<Record<string, string[]>>('dynamicTextInput', {});

@@ -3,11 +3,11 @@ import React, { useState } from 'react';
 import { canvasObjects, certifTemplate as certifTemplateAtom } from 'gstates';
 import TextOption from './text-option';
 import { useAtom } from 'jotai';
-import { useUpdateAtom } from 'jotai/utils';
+import InputOption from './input-option';
 
 const Sidebar = () => {
   const [certifTemplate, setCertifTemplate] = useAtom(certifTemplateAtom);
-  const setCObjects = useUpdateAtom(canvasObjects);
+  const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [active, setActive] = useState<'general' | 'input'>('general');
 
   return (
@@ -49,14 +49,13 @@ const Sidebar = () => {
       </Grid>
       {active === 'general' ? (
         <>
-          <Box p="4">
+          <Box borderBottom="1px solid" borderColor="gray.300" p="4">
             <Button
               onClick={() => {
                 setCObjects({});
                 setCertifTemplate({
                   ...certifTemplate,
-                  file: null,
-                  url: '',
+                  file: '',
                 });
               }}
               variant="outline"
@@ -71,9 +70,18 @@ const Sidebar = () => {
         </>
       ) : null}
       {active === 'input' ? (
-        <Box px="4" py="3" fontStyle="italic">
-          You don&apos;t have any input, please add input using the toolbar on the left side.
-        </Box>
+        <>
+          {Object.values(cObjects).reduce(
+            (prev, curr) => prev + (curr.type === 'text' ? 1 : 0),
+            0
+          ) > 0 ? (
+            <InputOption />
+          ) : (
+            <Box px="4" py="3" fontStyle="italic">
+              You don&apos;t have any input, please add input using the toolbar on the left side.
+            </Box>
+          )}
+        </>
       ) : null}
     </Box>
   );
