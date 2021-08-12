@@ -13,6 +13,7 @@ function App() {
 
   const handleFileDrop = async (files: FileList | null, e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+
     if (files) {
       if (!files[0].type.includes('png')) {
         toast({
@@ -51,12 +52,14 @@ function App() {
           width: this.width,
         });
       };
+
+      img.src = imgBase64 as string;
     }
   };
 
   return (
     <div className="App">
-      {template.file ? (
+      {template.file.length > 0 ? (
         <Canvas />
       ) : (
         <Box background="gray.100" position="fixed" top="0" bottom="0" right="72" left="14">
