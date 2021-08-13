@@ -73,10 +73,16 @@ const TextInput: React.FC<TextInputProps> = ({ data }) => {
     const { files } = e.target;
 
     if (!files) return;
-    if (!['csv', 'xls', 'xlsx'].includes(files[0].type)) {
+
+    if (
+      ![
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+      ].includes(files[0].type)
+    ) {
       toast({
         title: 'Wrong Format File',
-        description: 'Please upload either csv, xslx, or xls file format only',
+        description: 'Please upload either csv or xslx file format only',
         status: 'error',
         position: 'top',
         duration: 5000,
