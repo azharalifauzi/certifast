@@ -33,9 +33,13 @@ export const canvasObjects = atomWithStorage<Record<string, CanvasObject>>('cObj
 
 export const mousePosRelativeToTemplate = atom<{ x: number; y: number }>({ x: 0, y: 0 });
 
+// Toolbar things
 type ActiveToolbar = 'text' | 'move' | 'resize';
-
 export const activeToolbar = atom<ActiveToolbar>('move');
+export const spaceKey = atom<boolean>(false);
+export const ctrlKey = atom<boolean>(false);
+export const isOutsideCanvas = atom<boolean>(false);
+
 export const selectedObject = atom<string>('');
 
 export const dynamicTextInput = atomWithStorage<Record<string, string[]>>('dynamicTextInput', {});

@@ -17,9 +17,7 @@ import {
 import { canvasObjects, CanvasTextMeta, dynamicTextInput } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue } from 'jotai/utils';
-import React from 'react';
-import { useState } from 'react';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
 import { BsGrid } from 'react-icons/bs';
 import XLSX from 'xlsx';

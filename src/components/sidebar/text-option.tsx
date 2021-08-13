@@ -25,7 +25,7 @@ const TextOption = () => {
 
   const { data } = useMemo(() => cObjects[selected] ?? { data: {} }, [selected, cObjects]);
 
-  const { data: fontOptions } = useQuery<GoogleFont[]>(['fonts', selected, cObjects], async () => {
+  const { data: fontOptions } = useQuery<GoogleFont[]>(['fonts', selected], async () => {
     const apiKey = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
     const res = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`);
 
@@ -33,10 +33,12 @@ const TextOption = () => {
     const items: GoogleFont[] = data.items;
 
     if (selected) {
-      const font = items?.find(({ family }) => family === cObjects[selected].data.family);
-      const weightOpt = font?.variants.filter((value) => !value.includes('italic'));
+      if (cObjects[selected]) {
+        const font = items?.find(({ family }) => family === cObjects[selected].data.family);
+        const weightOpt = font?.variants.filter((value) => !value.includes('italic'));
 
-      setWeightOptions(weightOpt ?? []);
+        setWeightOptions(weightOpt ?? []);
+      }
     }
 
     return items;
@@ -125,7 +127,7 @@ const TextOption = () => {
               }
             />
           </Grid>
-          <Select size="sm" value="center">
+          <Select onChange={() => null} size="sm" value="center">
             <option value="left">Left</option>
             <option value="center">Center</option>
             <option value="right">Right</option>

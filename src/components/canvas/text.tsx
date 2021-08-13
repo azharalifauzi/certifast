@@ -1,6 +1,12 @@
 import { Box } from '@chakra-ui/react';
-import { canvasObjects, activeToolbar as activeToolbarAtom, selectedObject } from 'gstates';
+import {
+  canvasObjects,
+  activeToolbar as activeToolbarAtom,
+  selectedObject,
+  spaceKey as spaceKeyAtom,
+} from 'gstates';
 import { useAtom } from 'jotai';
+import { useAtomValue } from 'jotai/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMemo } from 'react';
 import { useMount } from 'react-use';
@@ -16,8 +22,9 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [zoom] = useAtom(zoomCanvas);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
-  const [prevZoom, setPrevZoom] = useState(zoom);
   const [selected, setSelected] = useAtom(selectedObject);
+  const spaceKey = useAtomValue(spaceKeyAtom);
+  const [prevZoom, setPrevZoom] = useState(zoom);
   const [triggerMove, setTriggerMove] = useState<boolean>(false);
   const [resize, setResize] = useState<boolean>(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -56,6 +63,8 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     const handleMouseMove = (e: MouseEvent) => {
       const { clientX, clientY, movementX } = e;
 
+      if (spaceKey) return;
+
       if (triggerMove && activeToolbar === 'move') {
         setCObjects((obj) => {
           const newCObjects = { ...obj };
@@ -80,7 +89,17 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [triggerMove, mousePos, activeToolbar, id, setCObjects, resize, mousePosResize.x, zoom]);
+  }, [
+    triggerMove,
+    mousePos,
+    activeToolbar,
+    id,
+    setCObjects,
+    resize,
+    mousePosResize.x,
+    zoom,
+    spaceKey,
+  ]);
 
   useEffect(() => {
     const handleDelete = (e: KeyboardEvent) => {
@@ -121,9 +140,11 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       borderColor={selected === id ? 'blue.400' : 'transparent'}
       fontSize={textData.size * zoom}
       onClick={() => {
+        if (spaceKey) return;
         if (activeToolbar === 'move') setSelected(id);
       }}
       onMouseDown={(e) => {
+        if (spaceKey) return;
         if (activeToolbar === 'move') setSelected(id);
         setMousePos({
           x: e.clientX - textData.x,
