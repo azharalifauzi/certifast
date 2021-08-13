@@ -10,6 +10,9 @@ import {
   mousePosRelativeToTemplate as mousePosRelativeToTemplateAtom,
   activeToolbar as activeToolbarAtom,
   selectedObject,
+  spaceKey as spaceKeyAtom,
+  ctrlKey as ctrlKeyAtom,
+  isOutsideCanvas as isMouseOutsideCanvasAtom,
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage } from 'jotai/utils';
@@ -35,11 +38,12 @@ const Canvas = () => {
   );
   const [activeToolbar] = useAtom(activeToolbarAtom);
   const [selected, setSelected] = useAtom(selectedObject);
+  const [ctrlKey, setCtrlKey] = useAtom(ctrlKeyAtom);
+  const [spaceKey, setSpaceKey] = useAtom(spaceKeyAtom);
+  const [isMouseOutsideCanvas, setIsMouseOutsideCanvas] = useAtom(isMouseOutsideCanvasAtom);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
-  const [ctrlKey, setCtrlKey] = useState<boolean>(false);
-  const [spaceKey, setSpaceKey] = useState<boolean>(false);
   const [windowRef, { width: windowW, height: windowH }] = useMeasure<HTMLDivElement>();
   const [canvasRef, { width: canvasW, height: canvasH }] = useMeasure<HTMLDivElement>();
 
@@ -56,27 +60,34 @@ const Canvas = () => {
   });
 
   useEffect(() => {
-    if (spaceKey && !triggerPan) document.body.style.cursor = 'grab';
+    if (!isMouseOutsideCanvas) document.body.style.cursor = 'default';
+    else if (spaceKey && !triggerPan) document.body.style.cursor = 'grab';
     else if (spaceKey && triggerPan) document.body.style.cursor = 'grabbing';
     else if (activeToolbar === 'text') document.body.style.cursor = 'text';
     else document.body.style.cursor = 'default';
-  }, [triggerPan, spaceKey, activeToolbar]);
+  }, [triggerPan, spaceKey, activeToolbar, isMouseOutsideCanvas]);
 
   useEffect(() => {
-    window.addEventListener('mouseup', () => {
-      setTriggerPan(false);
-    });
-
-    window.addEventListener('keydown', (e) => {
+    const handleMouseUp = () => setTriggerPan(false);
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Control') setCtrlKey(true);
       if (e.key === ' ') setSpaceKey(true);
-    });
-
-    window.addEventListener('keyup', (e) => {
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Control') setCtrlKey(false);
       if (e.key === ' ') setSpaceKey(false);
-    });
-  }, []);
+    };
+
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [setCtrlKey, setSpaceKey]);
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -109,7 +120,7 @@ const Canvas = () => {
     window.addEventListener('mousemove', handleMouseMove);
 
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [left, top, template.width, template.height, selected, setMousePosRelativeToTemplate]);
+  }, [left, top, template.width, template.height, selected, setMousePosRelativeToTemplate, zoom]);
 
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
     if (!ctrlKey) return;
@@ -147,7 +158,7 @@ const Canvas = () => {
     const newTop = top + Ty;
     const newLeft = left + Tx;
 
-    if (newLeft >= 0 || newTop >= 0) return;
+    if (newLeft >= 0 || newTop >= 0 || newZoom > 100) return;
     if (
       newLeft <= -(CANVAS_WIDTH * newZoom - windowW) ||
       newTop <= -(CANVAS_HEIGHT * newZoom - windowH)
@@ -175,7 +186,7 @@ const Canvas = () => {
           data: {
             align: 'center',
             color: '#000',
-            family: 'Times New Roman',
+            family: 'Roboto',
             id: newId,
             size: 32,
             text: `Text-${count + 1}`,
@@ -242,6 +253,12 @@ const Canvas = () => {
         backgroundSize="cover"
         onClick={handleAddObject}
         userSelect="none"
+        onMouseOver={() => {
+          setIsMouseOutsideCanvas(true);
+        }}
+        onMouseLeave={() => {
+          setIsMouseOutsideCanvas(false);
+        }}
       >
         <Box w="1%" h="1%" background="blue.200" position="absolute" top="20%" left="20%" />
         <Box
@@ -292,7 +309,7 @@ const Canvas = () => {
       </Box>
 
       {/* Zoom Indicator */}
-      <Flex
+      {/* <Flex
         position="absolute"
         bottom="6"
         left="24"
@@ -305,7 +322,7 @@ const Canvas = () => {
         alignItems="center"
       >
         {(zoom * 100).toFixed(0)}%
-      </Flex>
+      </Flex> */}
     </Box>
   );
 };

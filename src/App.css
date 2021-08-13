@@ -24,3 +24,7 @@ body {
   z-index: 50;
   opacity: 1;
 }
+
+.chakra-portal .chakra-popover__popper {
+  z-index: 150;
+}

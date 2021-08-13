@@ -1,13 +1,16 @@
-import { Box, Button, Grid, GridItem } from '@chakra-ui/react';
+import { Box, Button, Grid, GridItem, Text } from '@chakra-ui/react';
 import React, { useState } from 'react';
 import { canvasObjects, certifTemplate as certifTemplateAtom } from 'gstates';
 import TextOption from './text-option';
 import { useAtom } from 'jotai';
 import InputOption from './input-option';
+import { useUpdateAtom } from 'jotai/utils';
+import { zoomCanvas } from 'components/canvas';
 
 const Sidebar = () => {
   const [certifTemplate, setCertifTemplate] = useAtom(certifTemplateAtom);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
+  const setZoom = useUpdateAtom(zoomCanvas);
   const [active, setActive] = useState<'general' | 'input'>('general');
 
   return (
@@ -57,6 +60,7 @@ const Sidebar = () => {
                   ...certifTemplate,
                   file: '',
                 });
+                setZoom(1.0);
               }}
               variant="outline"
               colorScheme="red"
@@ -67,6 +71,14 @@ const Sidebar = () => {
             </Button>
           </Box>
           <TextOption />
+          <Box borderBottom="1px solid" borderColor="gray.300" p="4">
+            <Text fontWeight="medium" mb="4">
+              Export
+            </Text>
+            <Button variant="outline" colorScheme="black" w="100%" size="sm">
+              Generate Certificate
+            </Button>
+          </Box>
         </>
       ) : null}
       {active === 'input' ? (
