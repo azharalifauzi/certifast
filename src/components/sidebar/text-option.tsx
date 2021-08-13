@@ -59,6 +59,7 @@ const TextOption = () => {
           const newObj = { ...obj };
 
           newObj[selected].data.family = value;
+          newObj[selected].data.weight = '400';
           return newObj;
         });
       },

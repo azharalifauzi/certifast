@@ -219,6 +219,9 @@ const TextInput: React.FC<TextInputProps> = ({ data }) => {
                 copyInputs.splice(index, 1);
                 setInputs({ ...inputs, [data.id]: copyInputs });
               }}
+              onKeyPress={(e) => {
+                e.stopPropagation();
+              }}
             />
           );
         })}
@@ -231,13 +234,20 @@ interface TextInputFormProps {
   value: string;
   onChange: React.ChangeEventHandler<HTMLInputElement>;
   onDelete?: () => void;
+  onKeyPress?: React.KeyboardEventHandler<HTMLInputElement>;
 }
 
-const TextInputForm: React.FC<TextInputFormProps> = ({ value, onChange, onDelete }) => {
+const TextInputForm: React.FC<TextInputFormProps> = ({ value, onChange, onDelete, onKeyPress }) => {
   return (
     <Flex w="100%" justifyContent="space-between" alignItems="center">
       <Box w="80%">
-        <Input placeholder="Text" size="sm" value={value} onChange={onChange} />
+        <Input
+          placeholder="Text"
+          size="sm"
+          value={value}
+          onChange={onChange}
+          onKeyPress={onKeyPress}
+        />
       </Box>
       <Box
         tabIndex={1}
