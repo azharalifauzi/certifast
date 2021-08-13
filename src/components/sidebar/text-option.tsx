@@ -132,7 +132,7 @@ const TextOption = () => {
           </Select>
         </Stack>
       </Box>
-      <Box px="4" py="3">
+      <Box borderBottom="1px solid" borderColor="gray.300" px="4" py="3">
         <Text fontWeight="semibold" mb="4">
           Fill
         </Text>

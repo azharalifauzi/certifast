@@ -37,15 +37,16 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     if (zoom) {
       const scaleFactor = zoom / prevZoom;
 
-      const newCObjects = { ...cObjects };
+      setCObjects((cObjects) => {
+        const newCObjects = { ...cObjects };
 
-      newCObjects[id].data.x *= scaleFactor;
-      newCObjects[id].data.y *= scaleFactor;
-
-      setCObjects(newCObjects);
+        newCObjects[id].data.x *= scaleFactor;
+        newCObjects[id].data.y *= scaleFactor;
+        return newCObjects;
+      });
       setPrevZoom(zoom);
     }
-  }, [zoom]);
+  }, [zoom, setCObjects, id, prevZoom]);
 
   useEffect(() => {
     const handleMouseUp = () => {
@@ -79,14 +80,16 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [triggerMove, mousePos, activeToolbar, id, setCObjects, resize, mousePosResize.x]);
+  }, [triggerMove, mousePos, activeToolbar, id, setCObjects, resize, mousePosResize.x, zoom]);
 
   useEffect(() => {
     const handleDelete = (e: KeyboardEvent) => {
       if (e.key === 'Delete' && selected === id) {
-        const { [id]: _, ...newCObjects } = cObjects;
+        setCObjects((cObjects) => {
+          const { [id]: _, ...newCObjects } = cObjects;
 
-        setCObjects(newCObjects);
+          return newCObjects;
+        });
         setSelected('');
       }
     };
@@ -94,7 +97,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     window.addEventListener('keydown', handleDelete);
 
     return () => window.removeEventListener('keydown', handleDelete);
-  }, [id, selected]);
+  }, [id, selected, setCObjects, setSelected]);
 
   return (
     <Box

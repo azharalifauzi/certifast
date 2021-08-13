@@ -175,7 +175,7 @@ const Canvas = () => {
           data: {
             align: 'center',
             color: '#000',
-            family: 'Times New Roman',
+            family: 'Roboto',
             id: newId,
             size: 32,
             text: `Text-${count + 1}`,
