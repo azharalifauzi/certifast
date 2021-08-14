@@ -1,0 +1,26 @@
+[package]
+name = "core-certifast"
+version = "0.1.0"
+authors = ["azharalifauzi <azharalifauzi@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wasm-bindgen = { version = "0.2.75", features = ["serde-serialize"] }
+imageproc = "0.22.0"
+image = { version = "0.23.14" }
+rusttype = "0.9.2"
+js-sys = "0.3.52"
+web-sys = { version = "0.3.52", features = [
+  "console",
+], default-features = false }
+base64 = "0.13.0"
+console_error_panic_hook = "0.1.6"
+serde_json = "1.0.59"
+serde_derive = "1.0.127"
+serde = { version = "1.0", features = ["derive"] }
+zip = { version = "0.5.13", default-features = false }

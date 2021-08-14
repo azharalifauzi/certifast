@@ -4,9 +4,10 @@ import {
   activeToolbar as activeToolbarAtom,
   selectedObject,
   spaceKey as spaceKeyAtom,
+  dynamicTextInput,
 } from 'gstates';
 import { useAtom } from 'jotai';
-import { useAtomValue } from 'jotai/utils';
+import { useAtomValue, useUpdateAtom } from 'jotai/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMemo } from 'react';
 import { useMount } from 'react-use';
@@ -24,6 +25,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
   const [selected, setSelected] = useAtom(selectedObject);
   const spaceKey = useAtomValue(spaceKeyAtom);
+  const setDynamicInputText = useUpdateAtom(dynamicTextInput);
   const [prevZoom, setPrevZoom] = useState(zoom);
   const [triggerMove, setTriggerMove] = useState<boolean>(false);
   const [resize, setResize] = useState<boolean>(false);
@@ -110,6 +112,10 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           return newCObjects;
         });
         setSelected('');
+        setDynamicInputText((input) => {
+          const { [id]: _, ...newInput } = input;
+          return newInput;
+        });
       }
     };
 
@@ -137,6 +143,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       userSelect="none"
       position="absolute"
       border="2px solid"
+      lineHeight="1.0"
       borderColor={selected === id ? 'blue.400' : 'transparent'}
       fontSize={textData.size * zoom}
       onClick={() => {
