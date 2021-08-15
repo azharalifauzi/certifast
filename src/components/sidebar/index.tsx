@@ -60,7 +60,8 @@ const Sidebar = () => {
       const arrayOfFonts = queryClient.getQueriesData<GoogleFont[]>('fonts');
       const fonts = arrayOfFonts[arrayOfFonts.length - 1][1];
       const font = fonts.find(({ family }) => data.family === family);
-      const fontFileUrl = font?.files['regular'];
+      let fontFileUrl = font?.files['regular'];
+      if (import.meta.env.PROD) fontFileUrl = fontFileUrl?.replace('http', 'https');
       const fontFile = await fetch(fontFileUrl ?? '');
       const fontArrayBuff = await fontFile.arrayBuffer();
       const fontBase64 = encode(fontArrayBuff);
