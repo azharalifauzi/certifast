@@ -309,20 +309,22 @@ const Canvas = () => {
       </Box>
 
       {/* Zoom Indicator */}
-      {/* <Flex
-        position="absolute"
-        bottom="6"
-        left="24"
-        background="rgba(0,0,0, .4)"
-        color="white"
-        width="16"
-        height="16"
-        borderRadius="50%"
-        justifyContent="center"
-        alignItems="center"
-      >
-        {(zoom * 100).toFixed(0)}%
-      </Flex> */}
+      {import.meta.env.DEV ? (
+        <Flex
+          position="absolute"
+          bottom="6"
+          left="24"
+          background="rgba(0,0,0, .4)"
+          color="white"
+          width="16"
+          height="16"
+          borderRadius="50%"
+          justifyContent="center"
+          alignItems="center"
+        >
+          {(zoom * 100).toFixed(0)}%
+        </Flex>
+      ) : null}
     </Box>
   );
 };
