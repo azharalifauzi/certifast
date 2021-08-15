@@ -40,13 +40,14 @@ const Sidebar = () => {
   const [progress, setProgress] = useState<number>(0);
   const [totalProgress, setTotalProgress] = useState<number>(0);
   const [progressState, setProgressState] = useState<
-    'load image' | 'printing' | 'archiving' | 'end'
-  >('load image');
+    'init' | 'load image' | 'printing' | 'archiving' | 'end'
+  >('init');
 
   const handleGenerateCertificate = async () => {
     const worker = new Worker('/worker.js');
 
     worker.postMessage({ type: 'init', wasm_uri: '/abi/core_certifast_bg.wasm' });
+    setProgressState('init');
 
     const dynamicTextData = Object.values(cObjects);
     const certificateInput: any[][] = [];
@@ -60,7 +61,9 @@ const Sidebar = () => {
       const arrayOfFonts = queryClient.getQueriesData<GoogleFont[]>('fonts');
       const fonts = arrayOfFonts[arrayOfFonts.length - 1][1];
       const font = fonts.find(({ family }) => data.family === family);
-      let fontFileUrl = font?.files['regular'];
+      let fontWeight = data.weight;
+      if (fontWeight === '400') fontWeight = 'regular';
+      let fontFileUrl = font?.files[fontWeight];
       if (import.meta.env.PROD) fontFileUrl = fontFileUrl?.replace('http', 'https');
       const fontFile = await fetch(fontFileUrl ?? '');
       const fontArrayBuff = await fontFile.arrayBuffer();
@@ -100,7 +103,7 @@ const Sidebar = () => {
       const msg = e.data;
 
       if (msg.type === 'print') {
-        const blob = new Blob([msg.data.buffer], { type: 'image/jpeg' });
+        const blob = new Blob([msg.data.buffer]);
 
         const url = URL.createObjectURL(blob);
 
@@ -124,7 +127,7 @@ const Sidebar = () => {
       }
     });
 
-    return;
+    setProgressState('end');
   };
 
   return (
@@ -139,7 +142,9 @@ const Sidebar = () => {
         <ModalOverlay />
         <ModalContent h="56">
           <ModalBody fontSize="sm">
-            {progressState === 'load image' ? (
+            {progressState === 'load image' ||
+            progressState === 'init' ||
+            progressState === 'end' ? (
               <>
                 <Flex mt="12" mb="4" justifyContent="center">
                   <Loading />
@@ -148,7 +153,8 @@ const Sidebar = () => {
                   Loading certificate template
                 </Text>{' '}
               </>
-            ) : (
+            ) : null}
+            {progressState === 'printing' || progressState === 'archiving' ? (
               <Box mt="12">
                 <Text fontWeight="medium" mb="6">
                   Progress
@@ -162,7 +168,7 @@ const Sidebar = () => {
                   </Text>
                 )}
               </Box>
-            )}
+            ) : null}
           </ModalBody>
         </ModalContent>
       </Modal>
