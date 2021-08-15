@@ -16,6 +16,7 @@ import {
   canvasObjects,
   certifTemplate as certifTemplateAtom,
   dynamicTextInput as dynamicTextInputAtom,
+  selectedObject,
 } from 'gstates';
 import TextOption from './text-option';
 import { useAtom } from 'jotai';
@@ -25,7 +26,7 @@ import { decode, encode } from 'base64-arraybuffer';
 import { useQueryClient } from 'react-query';
 import { measureText } from 'helpers';
 import hexRgb from 'hex-rgb';
-import { useAtomValue } from 'jotai/utils';
+import { useAtomValue, useUpdateAtom } from 'jotai/utils';
 import Loading from 'components/loading';
 
 const Sidebar = () => {
@@ -35,6 +36,7 @@ const Sidebar = () => {
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [zoom, setZoom] = useAtom(zoomCanvas);
   const dynamicTextInput = useAtomValue(dynamicTextInputAtom);
+  const setSelected = useUpdateAtom(selectedObject);
   const [active, setActive] = useState<'general' | 'input'>('general');
   const [isProgressModalOpen, setIsProgressModalOpen] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
@@ -210,39 +212,44 @@ const Sidebar = () => {
         </Grid>
         {active === 'general' ? (
           <>
-            <Box borderBottom="1px solid" borderColor="gray.300" p="4">
-              <Button
-                onClick={() => {
-                  setCObjects({});
-                  setCertifTemplate({
-                    ...certifTemplate,
-                    file: '',
-                  });
-                  setZoom(1.0);
-                }}
-                variant="outline"
-                colorScheme="red"
-                w="100%"
-                size="sm"
-              >
-                Reset Project
-              </Button>
-            </Box>
+            {certifTemplate.file.length > 0 ? (
+              <Box borderBottom="1px solid" borderColor="gray.300" p="4">
+                <Button
+                  onClick={() => {
+                    setCObjects({});
+                    setCertifTemplate({
+                      ...certifTemplate,
+                      file: '',
+                    });
+                    setSelected('');
+                    setZoom(1.0);
+                  }}
+                  variant="outline"
+                  colorScheme="red"
+                  w="100%"
+                  size="sm"
+                >
+                  Reset Project
+                </Button>
+              </Box>
+            ) : null}
             <TextOption />
-            <Box borderBottom="1px solid" borderColor="gray.300" p="4">
-              <Text fontWeight="medium" mb="4">
-                Export
-              </Text>
-              <Button
-                onClick={handleGenerateCertificate}
-                variant="outline"
-                colorScheme="black"
-                w="100%"
-                size="sm"
-              >
-                Generate Certificate
-              </Button>
-            </Box>
+            {certifTemplate.file.length > 0 ? (
+              <Box borderBottom="1px solid" borderColor="gray.300" p="4">
+                <Text fontWeight="medium" mb="4">
+                  Export
+                </Text>
+                <Button
+                  onClick={handleGenerateCertificate}
+                  variant="outline"
+                  colorScheme="black"
+                  w="100%"
+                  size="sm"
+                >
+                  Generate Certificate
+                </Button>
+              </Box>
+            ) : null}
           </>
         ) : null}
         {active === 'input' ? (
