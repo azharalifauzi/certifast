@@ -7,7 +7,6 @@ import {
   Modal,
   ModalBody,
   ModalContent,
-  ModalHeader,
   ModalOverlay,
   Progress,
   Text,
@@ -22,8 +21,6 @@ import TextOption from './text-option';
 import { useAtom } from 'jotai';
 import InputOption from './input-option';
 import { zoomCanvas } from 'components/canvas';
-import init, { print_many_certificate } from 'core-certifast';
-import { useMount } from 'react-use';
 import { decode, encode } from 'base64-arraybuffer';
 import { useQueryClient } from 'react-query';
 import { measureText } from 'helpers';
@@ -46,11 +43,11 @@ const Sidebar = () => {
     'load image' | 'printing' | 'archiving' | 'end'
   >('load image');
 
-  useMount(() => {
-    init();
-  });
-
   const handleGenerateCertificate = async () => {
+    const worker = new Worker('/worker.js');
+
+    worker.postMessage({ type: 'init', wasm_uri: '/abi/core_certifast_bg.wasm' });
+
     const dynamicTextData = Object.values(cObjects);
     const certificateInput: any[][] = [];
 
@@ -95,28 +92,38 @@ const Sidebar = () => {
     const imgBase64 = certifTemplate.file.split(',')[1];
     const arrBuff = decode(imgBase64);
     const imgUnitArr = new Uint8Array(arrBuff);
-    const cert = print_many_certificate(certificateInput, imgUnitArr, (val: string | number) => {
-      console.log(val);
-      if (val === 'load image') setProgressState('load image');
-      else if (typeof val === 'number') {
-        setProgressState('printing');
-        setProgress(val + 1);
-      } else setProgressState('archiving');
+
+    worker.postMessage({ type: 'print', texts: certificateInput, certif_template: imgUnitArr });
+
+    worker.addEventListener('message', (e) => {
+      const msg = e.data;
+
+      if (msg.type === 'print') {
+        const blob = new Blob([msg.data.buffer], { type: 'image/jpeg' });
+
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.setAttribute('download', `Certificates.zip`);
+        a.setAttribute('href', url);
+        a.style.display = 'none';
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        setIsProgressModalOpen(false);
+        setProgressState('end');
+      }
+
+      if (msg.type === 'progress') {
+        if (msg.data === 'load image') setProgressState('load image');
+        else if (typeof msg.data === 'number') {
+          setProgressState('printing');
+          setProgress(msg.data + 1);
+        } else setProgressState('archiving');
+      }
     });
 
-    const blob = new Blob([cert.buffer], { type: 'image/jpeg' });
-
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.setAttribute('download', `Certificates.zip`);
-    a.setAttribute('href', url);
-    a.style.display = 'none';
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    setIsProgressModalOpen(false);
-    setProgressState('end');
+    return;
   };
 
   return (
@@ -145,9 +152,9 @@ const Sidebar = () => {
                 <Text fontWeight="medium" mb="6">
                   Progress
                 </Text>
-                <Progress mb="2" value={progress / totalProgress} />
+                <Progress mb="2" value={(progress / totalProgress) * 100} />
                 {progressState === 'archiving' ? (
-                  <Text>Downloading your files</Text>
+                  <Text fontWeight="medium">Downloading your files</Text>
                 ) : (
                   <Text fontWeight="medium">
                     Generating Certificate {progress} of {totalProgress}

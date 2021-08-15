@@ -16,7 +16,7 @@ image = { version = "0.23.14" }
 rusttype = "0.9.2"
 js-sys = "0.3.52"
 web-sys = { version = "0.3.52", features = [
-  "console",
+  'console',
 ], default-features = false }
 base64 = "0.13.0"
 console_error_panic_hook = "0.1.6"

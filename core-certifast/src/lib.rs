@@ -35,6 +35,11 @@ pub struct CanvasDynamicText {
 }
 
 #[wasm_bindgen]
+pub fn hello(str: &str) {
+    console::log_1(&JsValue::from_str(str));
+}
+
+#[wasm_bindgen]
 pub fn print_many_certificate(
     texts: &JsValue,
     certif_template: &Uint8Array,

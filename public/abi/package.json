@@ -1,0 +1,14 @@
+{
+  "name": "core-certifast",
+  "collaborators": [
+    "azharalifauzi <azharalifauzi@gmail.com>"
+  ],
+  "version": "0.1.0",
+  "files": [
+    "core_certifast_bg.wasm",
+    "core_certifast.js",
+    "core_certifast.d.ts"
+  ],
+  "browser": "core_certifast.js",
+  "types": "core_certifast.d.ts"
+}
