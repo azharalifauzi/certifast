@@ -9,6 +9,7 @@ import { BsCardImage } from 'react-icons/bs';
 import 'react-select/dist/react-select.css';
 import 'react-virtualized/styles.css';
 import 'react-virtualized-select/styles.css';
+import 'react-color-palette/lib/css/styles.css';
 
 function App() {
   const [template, setTemplate] = useAtom(certifTemplate);

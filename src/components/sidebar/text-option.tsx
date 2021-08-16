@@ -5,13 +5,11 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Select,
   Stack,
   Box,
   Grid,
   Text,
 } from '@chakra-ui/react';
-import ColorPicker from 'components/color-picker';
 import { selectedObject, canvasObjects, preventToolbar } from 'gstates';
 import { useAtom } from 'jotai';
 import { useQuery } from 'react-query';
@@ -19,12 +17,14 @@ import { useState } from 'react';
 import WebFont from 'webfontloader';
 import VirtualizedSelect from 'react-virtualized-select';
 import { useUpdateAtom } from 'jotai/utils';
+import { ColorPicker, useColor } from 'react-color-palette';
 
 const TextOption = () => {
   const [selected] = useAtom(selectedObject);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [weightOptions, setWeightOptions] = useState<string[]>([]);
   const setPreventToolbar = useUpdateAtom(preventToolbar);
+  const [color, setColor] = useColor('hex', cObjects[selected].data.color);
 
   const { data } = useMemo(() => cObjects[selected] ?? { data: {} }, [selected, cObjects]);
 
@@ -75,9 +75,7 @@ const TextOption = () => {
     setWeightOptions(weightOpt ?? []);
   };
 
-  const handleChangeFontWeight: React.ChangeEventHandler<HTMLSelectElement> = (e) => {
-    const { value } = e.target;
-
+  const handleChangeFontWeight = (value: string) => {
     setCObjects((obj) => {
       const newObj = { ...obj };
 
@@ -108,20 +106,23 @@ const TextOption = () => {
             onBlur={() => {
               setPreventToolbar(false);
             }}
+            clearable={false}
           />
           <Grid gap="3" gridTemplateColumns="2fr 1fr">
-            <Select
-              onChange={handleChangeFontWeight}
+            <VirtualizedSelect
+              options={weightOptions.map((value) => ({
+                label: value === 'regular' ? '400' : value,
+                value: value === 'regular' ? '400' : value,
+              }))}
               value={data.weight}
+              // @ts-ignore
+              onChange={({ value }) => {
+                handleChangeFontWeight(value);
+              }}
+              searchable={false}
               placeholder="Weight"
-              size="sm"
-            >
-              {weightOptions.map((value) => (
-                <option key={value} value={value === 'regular' ? 400 : value}>
-                  {value === 'regular' ? 400 : value}
-                </option>
-              ))}
-            </Select>
+              clearable={false}
+            />
             <Input
               type="number"
               size="sm"
@@ -137,9 +138,15 @@ const TextOption = () => {
               }
             />
           </Grid>
-          <Select
-            onChange={(e) => {
-              const { value } = e.target;
+          <VirtualizedSelect
+            options={[
+              { label: 'Left', value: 'left' },
+              { label: 'Center', value: 'center' },
+              { label: 'Right', value: 'right' },
+            ]}
+            value={data.align}
+            // @ts-ignore
+            onChange={({ value }) => {
               setCObjects((obj) => {
                 const newObj = { ...obj };
 
@@ -148,13 +155,10 @@ const TextOption = () => {
                 return newObj;
               });
             }}
-            size="sm"
-            value={data.align}
-          >
-            <option value="left">Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-          </Select>
+            searchable={false}
+            placeholder="Align"
+            clearable={false}
+          />
         </Stack>
       </Box>
       <Box borderBottom="1px solid" borderColor="gray.300" px="4" py="3">
@@ -162,21 +166,28 @@ const TextOption = () => {
           Fill
         </Text>
         <InputGroup size="sm">
-          <Popover placement="left">
+          <Popover lazyBehavior="unmount" isLazy placement="left">
             <PopoverTrigger>
               <Box as="button" h="8" w="8" background={data.color} />
             </PopoverTrigger>
             <PopoverContent>
               <ColorPicker
-                color={data.color}
-                onChange={(c) =>
+                hideHSV
+                hideRGB
+                width={320}
+                height={200}
+                color={color}
+                onChange={(c) => {
                   setCObjects((obj) => {
                     const newObj = { ...obj };
 
+                    // @ts-ignore
                     newObj[selected].data.color = c.hex;
                     return newObj;
-                  })
-                }
+                  });
+
+                  return setColor;
+                }}
               />
             </PopoverContent>
           </Popover>
