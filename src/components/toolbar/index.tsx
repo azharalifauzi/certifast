@@ -2,30 +2,33 @@ import { Box, Stack, Flex, Tooltip } from '@chakra-ui/react';
 import { useAtom } from 'jotai';
 import React from 'react';
 import { BsCursor, BsCursorText } from 'react-icons/bs';
-import { activeToolbar as activeToolbarAtom } from 'gstates';
+import { activeToolbar as activeToolbarAtom, preventToolbar as preventToolbarAtom } from 'gstates';
 import { useEffect } from 'react';
+import { useAtomValue } from 'jotai/utils';
 
 const Toolbar = () => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
+  const preventToolbar = useAtomValue(preventToolbarAtom);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'v':
-          setActiveToolbar('move');
-          break;
-        case 't':
-          setActiveToolbar('text');
-          break;
-        default:
-          break;
-      }
+      if (!preventToolbar)
+        switch (e.key) {
+          case 'v':
+            setActiveToolbar('move');
+            break;
+          case 't':
+            setActiveToolbar('text');
+            break;
+          default:
+            break;
+        }
     };
 
     window.addEventListener('keypress', handleKeyPress);
 
     return () => window.removeEventListener('keypress', handleKeyPress);
-  }, []);
+  }, [preventToolbar]);
 
   return (
     <Box background="gray.800" top="0" bottom="0" left="0" w="14" position="fixed" zIndex="100">

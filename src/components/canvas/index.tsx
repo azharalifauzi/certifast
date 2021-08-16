@@ -1,6 +1,6 @@
 import { Box, Flex, Image } from '@chakra-ui/react';
 import { useWindowSize, useMeasure, useMount } from 'react-use';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { useAtom, atom } from 'jotai';
 import { Loading } from 'components';
 import CanvasText from './text';
@@ -329,4 +329,4 @@ const Canvas = () => {
   );
 };
 
-export default Canvas;
+export default memo(Canvas);

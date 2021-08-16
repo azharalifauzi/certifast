@@ -1,52 +1,59 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import {
   Input,
   InputGroup,
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Select,
   Stack,
   Box,
   Grid,
   Text,
 } from '@chakra-ui/react';
-import ColorPicker from 'components/color-picker';
-import { selectedObject, canvasObjects } from 'gstates';
+import { selectedObject, canvasObjects, preventToolbar } from 'gstates';
 import { useAtom } from 'jotai';
 import { useQuery } from 'react-query';
 import { useState } from 'react';
 import WebFont from 'webfontloader';
+import VirtualizedSelect from 'react-virtualized-select';
+import { useUpdateAtom } from 'jotai/utils';
+import { ColorPicker, useColor } from 'react-color-palette';
 
 const TextOption = () => {
   const [selected] = useAtom(selectedObject);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [weightOptions, setWeightOptions] = useState<string[]>([]);
+  const setPreventToolbar = useUpdateAtom(preventToolbar);
+  const [color, setColor] = useColor('hex', cObjects[selected].data.color);
 
   const { data } = useMemo(() => cObjects[selected] ?? { data: {} }, [selected, cObjects]);
 
-  const { data: fontOptions } = useQuery<GoogleFont[]>(['fonts', selected], async () => {
-    const apiKey = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
-    const res = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`);
+  const { data: fontOptions } = useQuery<GoogleFont[]>(
+    ['fonts', selected],
+    async () => {
+      const apiKey = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
+      const res = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`);
 
-    const data = await res.json();
-    const items: GoogleFont[] = data.items;
+      const data = await res.json();
+      const items: GoogleFont[] = data.items;
 
-    if (selected) {
-      if (cObjects[selected]) {
-        const font = items?.find(({ family }) => family === cObjects[selected].data.family);
-        const weightOpt = font?.variants.filter((value) => !value.includes('italic'));
+      if (selected) {
+        if (cObjects[selected]) {
+          const font = items?.find(({ family }) => family === cObjects[selected].data.family);
+          const weightOpt = font?.variants.filter((value) => !value.includes('italic'));
 
-        setWeightOptions(weightOpt ?? []);
+          setWeightOptions(weightOpt ?? []);
+        }
       }
+
+      return items;
+    },
+    {
+      keepPreviousData: true,
     }
+  );
 
-    return items;
-  });
-
-  const handleChangeFont: React.ChangeEventHandler<HTMLSelectElement> = (e) => {
-    const { value } = e.target;
-
+  const handleChangeFont = (value: string) => {
     const font = fontOptions?.find(({ family }) => family === value);
     const weightOpt = font?.variants.filter((value) => !value.includes('italic'));
 
@@ -68,9 +75,7 @@ const TextOption = () => {
     setWeightOptions(weightOpt ?? []);
   };
 
-  const handleChangeFontWeight: React.ChangeEventHandler<HTMLSelectElement> = (e) => {
-    const { value } = e.target;
-
+  const handleChangeFontWeight = (value: string) => {
     setCObjects((obj) => {
       const newObj = { ...obj };
 
@@ -88,31 +93,36 @@ const TextOption = () => {
           Text
         </Text>
         <Stack spacing="3">
-          <Select
+          <VirtualizedSelect
+            options={fontOptions?.map(({ family }) => ({ label: family, value: family }))}
+            // @ts-ignore
+            onChange={({ value }) => {
+              handleChangeFont(value);
+            }}
             value={data.family}
-            onChange={handleChangeFont}
-            placeholder="Select Font"
-            size="sm"
-          >
-            {fontOptions?.map(({ family }) => (
-              <option value={family} key={family}>
-                {family}
-              </option>
-            ))}
-          </Select>
+            onFocus={() => {
+              setPreventToolbar(true);
+            }}
+            onBlur={() => {
+              setPreventToolbar(false);
+            }}
+            clearable={false}
+          />
           <Grid gap="3" gridTemplateColumns="2fr 1fr">
-            <Select
-              onChange={handleChangeFontWeight}
+            <VirtualizedSelect
+              options={weightOptions.map((value) => ({
+                label: value === 'regular' ? '400' : value,
+                value: value === 'regular' ? '400' : value,
+              }))}
               value={data.weight}
+              // @ts-ignore
+              onChange={({ value }) => {
+                handleChangeFontWeight(value);
+              }}
+              searchable={false}
               placeholder="Weight"
-              size="sm"
-            >
-              {weightOptions.map((value) => (
-                <option key={value} value={value === 'regular' ? 400 : value}>
-                  {value === 'regular' ? 400 : value}
-                </option>
-              ))}
-            </Select>
+              clearable={false}
+            />
             <Input
               type="number"
               size="sm"
@@ -128,11 +138,27 @@ const TextOption = () => {
               }
             />
           </Grid>
-          <Select onChange={() => null} size="sm" value="center">
-            <option value="left">Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-          </Select>
+          <VirtualizedSelect
+            options={[
+              { label: 'Left', value: 'left' },
+              { label: 'Center', value: 'center' },
+              { label: 'Right', value: 'right' },
+            ]}
+            value={data.align}
+            // @ts-ignore
+            onChange={({ value }) => {
+              setCObjects((obj) => {
+                const newObj = { ...obj };
+
+                newObj[selected].data.align = value as 'center' | 'left' | 'right';
+
+                return newObj;
+              });
+            }}
+            searchable={false}
+            placeholder="Align"
+            clearable={false}
+          />
         </Stack>
       </Box>
       <Box borderBottom="1px solid" borderColor="gray.300" px="4" py="3">
@@ -140,21 +166,28 @@ const TextOption = () => {
           Fill
         </Text>
         <InputGroup size="sm">
-          <Popover placement="left">
+          <Popover lazyBehavior="unmount" isLazy placement="left">
             <PopoverTrigger>
-              <Box as="button" h="8" w="8" style={{ background: data.color }} />
+              <Box as="button" h="8" w="8" background={data.color} />
             </PopoverTrigger>
             <PopoverContent>
               <ColorPicker
-                color={data.color}
-                onChange={(c) =>
+                hideHSV
+                hideRGB
+                width={320}
+                height={200}
+                color={color}
+                onChange={(c) => {
                   setCObjects((obj) => {
                     const newObj = { ...obj };
 
+                    // @ts-ignore
                     newObj[selected].data.color = c.hex;
                     return newObj;
-                  })
-                }
+                  });
+
+                  return setColor;
+                }}
               />
             </PopoverContent>
           </Popover>
@@ -165,4 +198,4 @@ const TextOption = () => {
   );
 };
 
-export default TextOption;
+export default memo(TextOption);

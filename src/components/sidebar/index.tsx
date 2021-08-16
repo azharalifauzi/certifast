@@ -11,7 +11,7 @@ import {
   Progress,
   Text,
 } from '@chakra-ui/react';
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import {
   canvasObjects,
   certifTemplate as certifTemplateAtom,
@@ -26,7 +26,7 @@ import { decode, encode } from 'base64-arraybuffer';
 import { useQueryClient } from 'react-query';
 import { measureText } from 'helpers';
 import hexRgb from 'hex-rgb';
-import { useAtomValue, useUpdateAtom } from 'jotai/utils';
+import { useAtomValue } from 'jotai/utils';
 import Loading from 'components/loading';
 
 const Sidebar = () => {
@@ -36,7 +36,7 @@ const Sidebar = () => {
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [zoom, setZoom] = useAtom(zoomCanvas);
   const dynamicTextInput = useAtomValue(dynamicTextInputAtom);
-  const setSelected = useUpdateAtom(selectedObject);
+  const [selected, setSelected] = useAtom(selectedObject);
   const [active, setActive] = useState<'general' | 'input'>('general');
   const [isProgressModalOpen, setIsProgressModalOpen] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
@@ -50,6 +50,7 @@ const Sidebar = () => {
 
     worker.postMessage({ type: 'init', wasm_uri: '/abi/core_certifast_bg.wasm' });
     setProgressState('init');
+    setIsProgressModalOpen(true);
 
     const dynamicTextData = Object.values(cObjects);
     const certificateInput: any[][] = [];
@@ -73,9 +74,18 @@ const Sidebar = () => {
 
       inputs?.forEach((val, index) => {
         const textWidth = measureText(val, data.family, data.size).width;
-        const Tx = (textWidth - widthTextTempalte) / 2;
+        let x = data.x / zoom;
 
-        const x = data.x / zoom - Tx;
+        if (data.align === 'center') {
+          const Tx = (textWidth - widthTextTempalte) / 2;
+          x = data.x / zoom - Tx;
+        }
+
+        if (data.align === 'right') {
+          const Tx = textWidth - widthTextTempalte;
+          x = data.x / zoom - Tx;
+        }
+
         const y = data.y / zoom;
 
         if (!certificateInput[index]) certificateInput[index] = [];
@@ -83,7 +93,7 @@ const Sidebar = () => {
         certificateInput[index].push({
           y,
           text: val,
-          x: x + textWidth * 0.06,
+          x: data.align === 'left' ? x : x + textWidth * 0.06,
           font_size: data.size * 1.067,
           font_fam: fontBase64,
           color: [red, green, blue, alpha],
@@ -92,7 +102,6 @@ const Sidebar = () => {
     });
 
     await Promise.all(loop);
-    setIsProgressModalOpen(true);
     setTotalProgress(certificateInput.length);
 
     const imgBase64 = certifTemplate.file.split(',')[1];
@@ -196,6 +205,7 @@ const Sidebar = () => {
           borderColor="gray.300"
         >
           <GridItem
+            userSelect="none"
             onClick={() => setActive('general')}
             _hover={{ color: 'black' }}
             color={active === 'general' ? 'black' : 'gray.400'}
@@ -203,6 +213,7 @@ const Sidebar = () => {
             General
           </GridItem>
           <GridItem
+            userSelect="none"
             onClick={() => setActive('input')}
             _hover={{ color: 'black' }}
             color={active === 'input' ? 'black' : 'gray.400'}
@@ -233,7 +244,7 @@ const Sidebar = () => {
                 </Button>
               </Box>
             ) : null}
-            <TextOption />
+            {selected.length > 0 ? <TextOption /> : null}
             {certifTemplate.file.length > 0 ? (
               <Box borderBottom="1px solid" borderColor="gray.300" p="4">
                 <Text fontWeight="medium" mb="4">
@@ -271,4 +282,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default memo(Sidebar);

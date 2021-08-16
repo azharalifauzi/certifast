@@ -8,11 +8,12 @@ import {
 } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, memo } from 'react';
 import { useMemo } from 'react';
 import { useMount } from 'react-use';
 import WebFont from 'webfontloader';
 import { zoomCanvas } from '.';
+import { GiCrosshair } from 'react-icons/gi';
 
 interface CanvasTextProps {
   id: string;
@@ -122,7 +123,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     window.addEventListener('keydown', handleDelete);
 
     return () => window.removeEventListener('keydown', handleDelete);
-  }, [id, selected, setCObjects, setSelected]);
+  }, [id, selected, setCObjects, setSelected, setDynamicInputText]);
 
   return (
     <Box
@@ -187,9 +188,19 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           onMouseLeave={() => setActiveToolbar('move')}
         />
       ) : null}
+      {selected === id ? (
+        <Box
+          left={textData.align === 'left' ? '0' : textData.align === 'center' ? '50%' : '100%'}
+          top="50%"
+          transform="translate(-50%, -50%)"
+          position="absolute"
+        >
+          <GiCrosshair color="#4399E1" size={12 * zoom} />
+        </Box>
+      ) : null}
       {textData.text}
     </Box>
   );
 };
 
-export default CanvasText;
+export default memo(CanvasText);
