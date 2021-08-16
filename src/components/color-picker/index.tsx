@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Box } from '@chakra-ui/layout';
 import { CSSProperties, forwardRef } from 'react';
 import { ChromePicker, Color, ColorChangeHandler, HuePicker, TwitterPicker } from 'react-color';
@@ -70,4 +70,4 @@ const ColorPicker = forwardRef<HTMLDivElement, ColorPickerProps>(
   }
 );
 
-export default ColorPicker;
+export default memo(ColorPicker);

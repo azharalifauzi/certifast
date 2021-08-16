@@ -18,7 +18,7 @@ import {
 import { canvasObjects, CanvasTextMeta, dynamicTextInput } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue } from 'jotai/utils';
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
 import { BsGrid, BsTrash } from 'react-icons/bs';
 import XLSX from 'xlsx';
@@ -39,13 +39,13 @@ const InputOption = () => {
   );
 };
 
-export default InputOption;
+export default memo(InputOption);
 
 interface TextInputProps {
   data: CanvasTextMeta;
 }
 
-const TextInput: React.FC<TextInputProps> = ({ data }) => {
+const TextInput: React.FC<TextInputProps> = memo(({ data }) => {
   const [inputs, setInputs] = useAtom(dynamicTextInput);
 
   const toast = useToast();
@@ -240,7 +240,7 @@ const TextInput: React.FC<TextInputProps> = ({ data }) => {
       </VStack>
     </Box>
   );
-};
+});
 
 interface TextInputFormProps {
   value: string;
@@ -250,34 +250,31 @@ interface TextInputFormProps {
   order?: number;
 }
 
-const TextInputForm: React.FC<TextInputFormProps> = ({
-  value,
-  onChange,
-  onDelete,
-  onKeyPress,
-  order,
-}) => {
-  return (
-    <Grid gridTemplateColumns="1.5rem 1fr 2rem" gap="2" alignItems="center">
-      <Text>{order}</Text>
-      <Box>
-        <Input
-          placeholder="Text"
-          size="sm"
-          value={value}
-          onChange={onChange}
-          onKeyPress={onKeyPress}
-        />
-      </Box>
-      <Box
-        tabIndex={1}
-        _hover={{ background: 'rgba(0,0,0,0.15)' }}
-        onClick={onDelete}
-        as="button"
-        p="2"
-      >
-        <AiOutlineMinus />
-      </Box>
-    </Grid>
-  );
-};
+// eslint-disable-next-line react/display-name
+const TextInputForm: React.FC<TextInputFormProps> = memo(
+  ({ value, onChange, onDelete, onKeyPress, order }) => {
+    return (
+      <Grid gridTemplateColumns="1.5rem 1fr 2rem" gap="2" alignItems="center">
+        <Text>{order}</Text>
+        <Box>
+          <Input
+            placeholder="Text"
+            size="sm"
+            value={value}
+            onChange={onChange}
+            onKeyPress={onKeyPress}
+          />
+        </Box>
+        <Box
+          tabIndex={1}
+          _hover={{ background: 'rgba(0,0,0,0.15)' }}
+          onClick={onDelete}
+          as="button"
+          p="2"
+        >
+          <AiOutlineMinus />
+        </Box>
+      </Grid>
+    );
+  }
+);
