@@ -196,6 +196,7 @@ const Sidebar = () => {
           borderColor="gray.300"
         >
           <GridItem
+            userSelect="none"
             onClick={() => setActive('general')}
             _hover={{ color: 'black' }}
             color={active === 'general' ? 'black' : 'gray.400'}
@@ -203,6 +204,7 @@ const Sidebar = () => {
             General
           </GridItem>
           <GridItem
+            userSelect="none"
             onClick={() => setActive('input')}
             _hover={{ color: 'black' }}
             color={active === 'input' ? 'black' : 'gray.400'}

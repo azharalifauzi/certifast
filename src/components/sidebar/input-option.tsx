@@ -13,13 +13,14 @@ import {
   Text,
   useToast,
   VStack,
+  Grid,
 } from '@chakra-ui/react';
 import { canvasObjects, CanvasTextMeta, dynamicTextInput } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue } from 'jotai/utils';
 import React, { useMemo } from 'react';
 import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
-import { BsGrid } from 'react-icons/bs';
+import { BsGrid, BsTrash } from 'react-icons/bs';
 import XLSX from 'xlsx';
 
 const InputOption = () => {
@@ -132,8 +133,18 @@ const TextInput: React.FC<TextInputProps> = ({ data }) => {
         background="white"
         zIndex="5"
       >
-        {data.text}
+        {data.text} ({input.length})
         <HStack spacing="1">
+          <Box
+            onClick={() => {
+              setInputs({ ...inputs, [data.id]: [] });
+            }}
+            p="2"
+            _hover={{ background: 'rgba(0,0,0,0.15)' }}
+            as="button"
+          >
+            <BsTrash size={16} />
+          </Box>
           <Popover placement="bottom" offset={[-80, 10]}>
             <PopoverTrigger>
               <Box p="2" _hover={{ background: 'rgba(0,0,0,0.15)' }} as="button">
@@ -192,7 +203,7 @@ const TextInput: React.FC<TextInputProps> = ({ data }) => {
             onClick={() =>
               setInputs({
                 ...inputs,
-                [data.id]: ['', ...input],
+                [data.id]: [...input, ''],
               })
             }
             p="2"
@@ -209,6 +220,7 @@ const TextInput: React.FC<TextInputProps> = ({ data }) => {
             <TextInputForm
               key={index}
               value={value}
+              order={index + 1}
               onChange={(e) => {
                 const copyInputs = [...input];
                 copyInputs[index] = e.target.value;
@@ -235,12 +247,20 @@ interface TextInputFormProps {
   onChange: React.ChangeEventHandler<HTMLInputElement>;
   onDelete?: () => void;
   onKeyPress?: React.KeyboardEventHandler<HTMLInputElement>;
+  order?: number;
 }
 
-const TextInputForm: React.FC<TextInputFormProps> = ({ value, onChange, onDelete, onKeyPress }) => {
+const TextInputForm: React.FC<TextInputFormProps> = ({
+  value,
+  onChange,
+  onDelete,
+  onKeyPress,
+  order,
+}) => {
   return (
-    <Flex w="100%" justifyContent="space-between" alignItems="center">
-      <Box w="80%">
+    <Grid gridTemplateColumns="1.5rem 1fr 2rem" gap="2" alignItems="center">
+      <Text>{order}</Text>
+      <Box>
         <Input
           placeholder="Text"
           size="sm"
@@ -258,6 +278,6 @@ const TextInputForm: React.FC<TextInputFormProps> = ({ value, onChange, onDelete
       >
         <AiOutlineMinus />
       </Box>
-    </Flex>
+    </Grid>
   );
 };
