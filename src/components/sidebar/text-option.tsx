@@ -24,7 +24,7 @@ const TextOption = () => {
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [weightOptions, setWeightOptions] = useState<string[]>([]);
   const setPreventToolbar = useUpdateAtom(preventToolbar);
-  const [color, setColor] = useColor('hex', cObjects[selected].data.color);
+  const [color, setColor] = useColor('hex', cObjects[selected]?.data?.color ?? '#000');
 
   const { data } = useMemo(() => cObjects[selected] ?? { data: {} }, [selected, cObjects]);
 
