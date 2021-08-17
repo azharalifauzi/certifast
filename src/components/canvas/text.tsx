@@ -62,6 +62,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     const handleMouseUp = () => {
       setTriggerMove(false);
       setResize(false);
+      setActiveToolbar('move');
     };
     const handleMouseMove = (e: MouseEvent) => {
       const { clientX, clientY, movementX } = e;
@@ -75,7 +76,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           newCObjects[id].data.y = clientY - mousePos.y;
           return newCObjects;
         });
-      } else if (resize && activeToolbar === 'move') {
+      } else if (resize && activeToolbar === 'resize') {
         setCObjects((obj) => {
           const newCObjects = { ...obj };
           const newSize = newCObjects[id].data.size + (movementX * 0.4) / zoom;
@@ -102,6 +103,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     mousePosResize.x,
     zoom,
     spaceKey,
+    setActiveToolbar,
   ]);
 
   useEffect(() => {
@@ -162,8 +164,9 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           x: e.clientX,
           y: e.clientY,
         });
-        if (activeToolbar === 'resize') setResize(true);
-        else setTriggerMove(true);
+        if (resize) {
+          setActiveToolbar('resize');
+        } else setTriggerMove(true);
       }}
     >
       {selected === id ? (
@@ -183,9 +186,11 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
             cursor: 'nw-resize',
           }}
           onMouseOver={() => {
-            if (activeToolbar === 'move') setActiveToolbar('resize');
+            setResize(true);
           }}
-          onMouseLeave={() => setActiveToolbar('move')}
+          onMouseLeave={() => {
+            if (activeToolbar === 'move') setResize(false);
+          }}
         />
       ) : null}
       {selected === id ? (

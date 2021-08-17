@@ -2,12 +2,17 @@ import { Box, Stack, Flex, Tooltip } from '@chakra-ui/react';
 import { useAtom } from 'jotai';
 import React from 'react';
 import { BsCursor, BsCursorText } from 'react-icons/bs';
-import { activeToolbar as activeToolbarAtom, preventToolbar as preventToolbarAtom } from 'gstates';
+import {
+  activeToolbar as activeToolbarAtom,
+  certifTemplate,
+  preventToolbar as preventToolbarAtom,
+} from 'gstates';
 import { useEffect } from 'react';
 import { useAtomValue } from 'jotai/utils';
 
 const Toolbar = () => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
+  const certTemplate = useAtomValue(certifTemplate);
   const preventToolbar = useAtomValue(preventToolbarAtom);
 
   useEffect(() => {
@@ -40,13 +45,15 @@ const Toolbar = () => {
         >
           <BsCursor color="white" size="24" style={{ transform: 'rotate(-90deg)' }} />
         </ToolbarItem>
-        <ToolbarItem
-          isActive={activeToolbar === 'text'}
-          label="Dynamic Text (T)"
-          onClick={() => setActiveToolbar('text')}
-        >
-          <BsCursorText color="white" size="24" />
-        </ToolbarItem>
+        {certTemplate.file.length > 0 ? (
+          <ToolbarItem
+            isActive={activeToolbar === 'text'}
+            label="Dynamic Text (T)"
+            onClick={() => setActiveToolbar('text')}
+          >
+            <BsCursorText color="white" size="24" />
+          </ToolbarItem>
+        ) : null}
       </Stack>
     </Box>
   );

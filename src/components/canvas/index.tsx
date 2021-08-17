@@ -61,6 +61,7 @@ const Canvas = () => {
 
   useEffect(() => {
     if (!isMouseOutsideCanvas) document.body.style.cursor = 'default';
+    else if (activeToolbar === 'resize') document.body.style.cursor = 'nw-resize';
     else if (spaceKey && !triggerPan) document.body.style.cursor = 'grab';
     else if (spaceKey && triggerPan) document.body.style.cursor = 'grabbing';
     else if (activeToolbar === 'text') document.body.style.cursor = 'text';
@@ -91,7 +92,7 @@ const Canvas = () => {
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (ctrlKey) e.preventDefault();
+      if (ctrlKey || e.metaKey) e.preventDefault();
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
