@@ -92,7 +92,7 @@ const Canvas = () => {
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (ctrlKey) e.preventDefault();
+      if (ctrlKey || e.metaKey) e.preventDefault();
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
