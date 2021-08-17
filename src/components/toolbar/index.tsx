@@ -1,7 +1,20 @@
-import { Box, Stack, Flex, Tooltip } from '@chakra-ui/react';
+import {
+  Box,
+  Stack,
+  Flex,
+  Tooltip,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverBody,
+  Portal,
+  PopoverArrow,
+  VStack,
+  Text,
+} from '@chakra-ui/react';
 import { useAtom } from 'jotai';
 import React from 'react';
-import { BsCursor, BsCursorText } from 'react-icons/bs';
+import { BsCursor, BsCursorText, BsExclamationCircle } from 'react-icons/bs';
 import {
   activeToolbar as activeToolbarAtom,
   certifTemplate,
@@ -36,8 +49,8 @@ const Toolbar = () => {
   }, [preventToolbar]);
 
   return (
-    <Box background="gray.800" top="0" bottom="0" left="0" w="14" position="fixed" zIndex="100">
-      <Stack spacing="0">
+    <Box background="gray.800" top="0" left="0" w="14" height="100%" position="fixed" zIndex="100">
+      <Stack height="100%" spacing="0">
         <ToolbarItem
           isActive={['move', 'resize'].includes(activeToolbar)}
           label="Move (V)"
@@ -54,6 +67,32 @@ const Toolbar = () => {
             <BsCursorText color="white" size="24" />
           </ToolbarItem>
         ) : null}
+        <Box mt="auto !important">
+          <Popover offset={[-10, 5]} placement="right-end">
+            <PopoverTrigger>
+              <Box>
+                <ToolbarItem label="About">
+                  <BsExclamationCircle color="white" size="24" />
+                </ToolbarItem>
+              </Box>
+            </PopoverTrigger>
+            <Portal>
+              <PopoverArrow />
+              <PopoverContent background="gray.800" color="white" w="48">
+                <PopoverBody px="0" fontSize="xs">
+                  <VStack spacing={0} py="1">
+                    <Box pl="6" py="1" w="100%" _hover={{ background: 'blue.400' }}>
+                      <Text>Tutorial</Text>
+                    </Box>
+                    <Box pl="6" py="1" w="100%" _hover={{ background: 'blue.400' }}>
+                      <Text>About</Text>
+                    </Box>
+                  </VStack>
+                </PopoverBody>
+              </PopoverContent>
+            </Portal>
+          </Popover>
+        </Box>
       </Stack>
     </Box>
   );
@@ -65,12 +104,14 @@ interface ToolbarItemProps {
   label?: string;
   isActive?: boolean;
   onClick?(): void;
+  style?: React.CSSProperties;
 }
 
-const ToolbarItem: React.FC<ToolbarItemProps> = ({ label, isActive, children, onClick }) => {
+const ToolbarItem: React.FC<ToolbarItemProps> = ({ label, isActive, children, onClick, style }) => {
   return (
     <Tooltip label={label} placement="right">
       <Flex
+        style={style}
         _hover={{ background: isActive ? undefined : 'black' }}
         justifyContent="center"
         alignItems="center"

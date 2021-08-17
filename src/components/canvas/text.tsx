@@ -62,7 +62,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     const handleMouseUp = () => {
       setTriggerMove(false);
       setResize(false);
-      setActiveToolbar('move');
+      if (activeToolbar === 'resize') setActiveToolbar('move');
     };
     const handleMouseMove = (e: MouseEvent) => {
       const { clientX, clientY, movementX } = e;
