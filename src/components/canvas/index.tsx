@@ -70,11 +70,11 @@ const Canvas = () => {
   useEffect(() => {
     const handleMouseUp = () => setTriggerPan(false);
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Control') setCtrlKey(true);
+      if (e.key === 'Control' || e.metaKey) setCtrlKey(true);
       if (e.key === ' ') setSpaceKey(true);
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Control') setCtrlKey(false);
+      if (e.key === 'Control' || e.metaKey) setCtrlKey(false);
       if (e.key === ' ') setSpaceKey(false);
     };
 
