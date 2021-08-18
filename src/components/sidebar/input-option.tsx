@@ -14,11 +14,17 @@ import {
   useToast,
   VStack,
   Grid,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
 } from '@chakra-ui/react';
 import { canvasObjects, CanvasTextMeta, dynamicTextInput } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue } from 'jotai/utils';
-import React, { useMemo, memo } from 'react';
+import React, { useMemo, memo, useState, useRef } from 'react';
 import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
 import { BsGrid, BsTrash } from 'react-icons/bs';
 import XLSX from 'xlsx';
@@ -47,6 +53,8 @@ interface TextInputProps {
 
 const TextInput: React.FC<TextInputProps> = memo(({ data }) => {
   const [inputs, setInputs] = useAtom(dynamicTextInput);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
+  const [isUploadPopupOpen, setIsUploadPopupOpen] = useState<boolean>(false);
 
   const toast = useToast();
 
@@ -116,129 +124,153 @@ const TextInput: React.FC<TextInputProps> = memo(({ data }) => {
       // clear input file
       const htmlInput = document.getElementById(data.id) as HTMLInputElement;
       htmlInput.value = '';
+
+      // close popover
+      setIsUploadPopupOpen(false);
     };
 
     reader.readAsArrayBuffer(files[0]);
   };
 
   return (
-    <Box borderBottom="1px solid" borderColor="gray.300" px="4">
-      <Flex
-        position="sticky"
-        top="0"
-        justifyContent="space-between"
-        alignItems="center"
-        fontWeight="600"
-        py="3"
-        background="white"
-        zIndex="5"
-      >
-        {data.text} ({input.length})
-        <HStack spacing="1">
-          <Box
-            onClick={() => {
-              setInputs({ ...inputs, [data.id]: [] });
-            }}
-            p="2"
-            _hover={{ background: 'rgba(0,0,0,0.15)' }}
-            as="button"
-          >
-            <BsTrash size={16} />
-          </Box>
-          <Popover placement="bottom" offset={[-80, 10]}>
-            <PopoverTrigger>
-              <Box p="2" _hover={{ background: 'rgba(0,0,0,0.15)' }} as="button">
-                <BsGrid size={16} />
+    <>
+      <DeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onDelete={() => {
+          setInputs({ ...inputs, [data.id]: [] });
+        }}
+      />
+      <Box borderBottom="1px solid" borderColor="gray.300" px="4">
+        <Flex
+          position="sticky"
+          top="0"
+          justifyContent="space-between"
+          alignItems="center"
+          fontWeight="600"
+          py="3"
+          background="white"
+          zIndex="5"
+        >
+          {data.text} ({input.length})
+          <HStack spacing="1">
+            {input.length > 0 ? (
+              <Box
+                onClick={() => {
+                  setIsDeleteModalOpen(true);
+                }}
+                p="2"
+                _hover={{ background: 'rgba(0,0,0,0.15)' }}
+                as="button"
+              >
+                <BsTrash size={16} />
               </Box>
-            </PopoverTrigger>
-            <Portal>
-              <PopoverContent fontSize="sm" w="64">
-                <PopoverHeader fontWeight="600">Upload CSV</PopoverHeader>
-                <PopoverBody py="4">
-                  <Box position="relative">
-                    <input
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: 0,
-                        height: 0,
-                        opacity: 0,
-                        userSelect: 'none',
-                      }}
-                      type="file"
-                      id={data.id}
-                      onChange={handleUploadCSV}
-                      accept=".csv,.xlsx,.xls"
-                    />
+            ) : null}
+            <Popover
+              isOpen={isUploadPopupOpen}
+              onClose={() => setIsUploadPopupOpen(false)}
+              placement="bottom"
+              offset={[-80, 10]}
+            >
+              <PopoverTrigger>
+                <Box
+                  onClick={() => setIsUploadPopupOpen(true)}
+                  p="2"
+                  _hover={{ background: 'rgba(0,0,0,0.15)' }}
+                  as="button"
+                >
+                  <BsGrid size={16} />
+                </Box>
+              </PopoverTrigger>
+              <Portal>
+                <PopoverContent fontSize="sm" w="64">
+                  <PopoverHeader fontWeight="600">Upload CSV</PopoverHeader>
+                  <PopoverBody py="4">
+                    <Box position="relative">
+                      <input
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: 0,
+                          height: 0,
+                          opacity: 0,
+                          userSelect: 'none',
+                        }}
+                        type="file"
+                        id={data.id}
+                        onChange={handleUploadCSV}
+                        accept=".csv,.xlsx,.xls"
+                      />
+                      <Button
+                        cursor="pointer"
+                        htmlFor={data.id}
+                        as="label"
+                        w="100%"
+                        variant="outline"
+                        colorScheme="green"
+                        size="sm"
+                      >
+                        Upload File
+                      </Button>
+                    </Box>
+                    <Text textAlign="center" my="4">
+                      Not sure with excel template looks like?
+                    </Text>
                     <Button
-                      cursor="pointer"
-                      htmlFor={data.id}
-                      as="label"
+                      onClick={handleDownloadTemplate}
                       w="100%"
                       variant="outline"
-                      colorScheme="green"
+                      colorScheme="blue"
                       size="sm"
                     >
-                      Upload File
+                      Download Excel Template
                     </Button>
-                  </Box>
-                  <Text textAlign="center" my="4">
-                    Not sure with excel template looks like?
-                  </Text>
-                  <Button
-                    onClick={handleDownloadTemplate}
-                    w="100%"
-                    variant="outline"
-                    colorScheme="blue"
-                    size="sm"
-                  >
-                    Download Excel Template
-                  </Button>
-                </PopoverBody>
-              </PopoverContent>
-            </Portal>
-          </Popover>
-          <Box
-            onClick={() =>
-              setInputs({
-                ...inputs,
-                [data.id]: [...input, ''],
-              })
-            }
-            p="2"
-            _hover={{ background: 'rgba(0,0,0,0.15)' }}
-            as="button"
-          >
-            <AiOutlinePlus size={16} />
-          </Box>
-        </HStack>
-      </Flex>
-      <VStack py={input.length > 0 ? '2' : '0'} alignItems="flex-start" spacing="2">
-        {input.map((value, index) => {
-          return (
-            <TextInputForm
-              key={index}
-              value={value}
-              order={index + 1}
-              onChange={(e) => {
-                const copyInputs = [...input];
-                copyInputs[index] = e.target.value;
-                setInputs({ ...inputs, [data.id]: copyInputs });
-              }}
-              onDelete={() => {
-                const copyInputs = [...input];
-                copyInputs.splice(index, 1);
-                setInputs({ ...inputs, [data.id]: copyInputs });
-              }}
-              onKeyPress={(e) => {
-                e.stopPropagation();
-              }}
-            />
-          );
-        })}
-      </VStack>
-    </Box>
+                  </PopoverBody>
+                </PopoverContent>
+              </Portal>
+            </Popover>
+            <Box
+              onClick={() =>
+                setInputs({
+                  ...inputs,
+                  [data.id]: [...input, ''],
+                })
+              }
+              p="2"
+              _hover={{ background: 'rgba(0,0,0,0.15)' }}
+              as="button"
+            >
+              <AiOutlinePlus size={16} />
+            </Box>
+          </HStack>
+        </Flex>
+        <VStack py={input.length > 0 ? '2' : '0'} alignItems="flex-start" spacing="2">
+          {input.map((value, index) => {
+            return (
+              <TextInputForm
+                key={index}
+                value={value}
+                order={index + 1}
+                onChange={(e) => {
+                  const copyInputs = [...input];
+                  copyInputs[index] = e.target.value;
+                  setInputs({ ...inputs, [data.id]: copyInputs });
+                }}
+                onDelete={() => {
+                  const copyInputs = [...input];
+                  copyInputs.splice(index, 1);
+                  setInputs({ ...inputs, [data.id]: copyInputs });
+                }}
+                onKeyPress={(e) => {
+                  e.stopPropagation();
+                }}
+              />
+            );
+          })}
+        </VStack>
+      </Box>
+    </>
   );
 });
 
@@ -278,3 +310,45 @@ const TextInputForm: React.FC<TextInputFormProps> = memo(
     );
   }
 );
+
+interface DeleteModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onDelete: () => void;
+}
+
+const DeleteModal: React.FC<DeleteModalProps> = ({ isOpen, onClose, onDelete }) => {
+  const cancelRef = useRef(null);
+
+  return (
+    <AlertDialog isCentered isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
+      <AlertDialogOverlay>
+        <AlertDialogContent fontSize="sm">
+          <AlertDialogHeader fontSize="md" fontWeight="bold">
+            Delete Inputs
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            Are you sure? You can&apos;t undo this action afterwards.
+          </AlertDialogBody>
+          <AlertDialogFooter>
+            <Button size="sm" ref={cancelRef} onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              colorScheme="red"
+              variant="outline"
+              onClick={() => {
+                onDelete();
+                onClose();
+              }}
+              ml={3}
+            >
+              Delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialogOverlay>
+    </AlertDialog>
+  );
+};
