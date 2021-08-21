@@ -108,7 +108,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
 
   useEffect(() => {
     const handleDelete = (e: KeyboardEvent) => {
-      if (e.key === 'Delete' && selected === id) {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selected === id) {
         setCObjects((cObjects) => {
           const { [id]: _, ...newCObjects } = cObjects;
 
