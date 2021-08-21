@@ -75,7 +75,7 @@ const Canvas = () => {
       if (e.key === ' ') setSpaceKey(true);
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Control' || e.metaKey) setCtrlKey(false);
+      if (e.key === 'Control' || !e.metaKey) setCtrlKey(false);
       if (e.key === ' ') setSpaceKey(false);
     };
 
