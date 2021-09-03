@@ -13,6 +13,7 @@ import {
   spaceKey as spaceKeyAtom,
   ctrlKey as ctrlKeyAtom,
   isOutsideCanvas as isMouseOutsideCanvasAtom,
+  willSnap,
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage } from 'jotai/utils';
@@ -41,9 +42,11 @@ const Canvas = () => {
   const [ctrlKey, setCtrlKey] = useAtom(ctrlKeyAtom);
   const [spaceKey, setSpaceKey] = useAtom(spaceKeyAtom);
   const [isMouseOutsideCanvas, setIsMouseOutsideCanvas] = useAtom(isMouseOutsideCanvasAtom);
+  const [_, setWillSnap] = useAtom(willSnap);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
+  const [snapRulers, setSnapRulers] = useState<Ruler[]>([]);
   const [windowRef, { width: windowW, height: windowH }] = useMeasure<HTMLDivElement>();
   const [canvasRef, { width: canvasW, height: canvasH }] = useMeasure<HTMLDivElement>();
 
@@ -103,25 +106,296 @@ const Canvas = () => {
   // mouse position listener relative to certif template
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!selected) {
-        const { clientX, clientY } = e;
+      const { clientX, clientY } = e;
 
-        const relativeToCanvasX = (CANVAS_WIDTH / 2 - template.width / 2) * zoom;
-        const relativeToCanvasY = (CANVAS_HEIGHT / 2 - template.height / 2) * zoom;
+      const relativeToCanvasX = (CANVAS_WIDTH / 2 - template.width / 2) * zoom;
+      const relativeToCanvasY = (CANVAS_HEIGHT / 2 - template.height / 2) * zoom;
 
-        const newPosition = {
-          x: -(left + relativeToCanvasX - clientX),
-          y: -(top + relativeToCanvasY - clientY),
-        };
+      const newPosition = {
+        x: -(left + relativeToCanvasX - clientX),
+        y: -(top + relativeToCanvasY - clientY),
+      };
 
-        setMousePosRelativeToTemplate(newPosition);
-      }
+      setMousePosRelativeToTemplate(newPosition);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
 
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [left, top, template.width, template.height, selected, setMousePosRelativeToTemplate, zoom]);
+
+  // Effect to trigger rulers and snaps
+  useEffect(() => {
+    const rulers: Ruler[] = [];
+    const selectedObj = cObjects[selected];
+    const snapDuration = 125;
+    if (!selectedObj) return;
+    const x = selectedObj.data.x / zoom;
+    const y = selectedObj.data.y / zoom;
+    const width = selectedObj.data.width ?? 0 / zoom;
+    const height = selectedObj.data.height ?? 0 / zoom;
+
+    const centerSelectedObj = [x + width / 2, y + height / 2];
+
+    Object.values(cObjects).forEach((obj) => {
+      if (obj.data.id === selected) return;
+
+      const _x = obj.data.x / zoom;
+      const _y = obj.data.y / zoom;
+      const _width = obj.data.width ?? 0 / zoom;
+      const _height = obj.data.height ?? 0 / zoom;
+
+      const centerObj = [_x + _width / 2, _y + _height / 2];
+
+      /**
+       * snap for left alignment
+       */
+      if ((x - 1).toFixed(0) === _x.toFixed(0) || (x + 1).toFixed(0) === _x.toFixed(0)) {
+        setWillSnap(true);
+        setCObjects((obj) => {
+          const newObj = { ...obj };
+          newObj[selected].data.x = _x * zoom;
+          return newObj;
+        });
+        // cancel will snap so object can move again
+        setTimeout(() => {
+          setWillSnap(false);
+        }, snapDuration);
+      }
+
+      /**
+       * snap for right alignment
+       */
+      if (
+        (x + width - 1).toFixed(0) === (_x + _width).toFixed(0) ||
+        (x + width + 1).toFixed(0) === (_x + _width).toFixed(0)
+      ) {
+        setWillSnap(true);
+        setCObjects((obj) => {
+          const newObj = { ...obj };
+          newObj[selected].data.x = (_x + _width - width) * zoom;
+          return newObj;
+        });
+        // cancel will snap so object can move again
+        setTimeout(() => {
+          setWillSnap(false);
+        }, snapDuration);
+      }
+
+      /**
+       * snap for center alignment
+       */
+      if (
+        (x + width / 2 - 1).toFixed(0) === (_x + _width / 2).toFixed(0) ||
+        (x + width / 2 + 1).toFixed(0) === (_x + _width / 2).toFixed(0)
+      ) {
+        setWillSnap(true);
+        setCObjects((obj) => {
+          const newObj = { ...obj };
+          newObj[selected].data.x = (_x + _width / 2 - width / 2) * zoom;
+          return newObj;
+        });
+        // cancel will snap so object can move again
+        setTimeout(() => {
+          setWillSnap(false);
+        }, snapDuration);
+      }
+
+      /**
+       * snap for left right alignment
+       */
+      if (
+        (x - 1).toFixed(0) === (_x + _width).toFixed(0) ||
+        (x + 1).toFixed(0) === (_x + _width).toFixed(0)
+      ) {
+        setWillSnap(true);
+        setCObjects((obj) => {
+          const newObj = { ...obj };
+          newObj[selected].data.x = (_x + _width) * zoom;
+          return newObj;
+        });
+        // cancel will snap so object can move again
+        setTimeout(() => {
+          setWillSnap(false);
+        }, snapDuration);
+      }
+
+      /**
+       * snap for right left alignment
+       */
+      if (
+        (x + width - 1).toFixed(0) === _x.toFixed(0) ||
+        (x + width + 1).toFixed(0) === _x.toFixed(0)
+      ) {
+        setWillSnap(true);
+        setCObjects((obj) => {
+          const newObj = { ...obj };
+          newObj[selected].data.x = (_x - width) * zoom;
+          return newObj;
+        });
+        // cancel will snap so object can move again
+        setTimeout(() => {
+          setWillSnap(false);
+        }, snapDuration);
+      }
+
+      /**
+       * snap for left center alignment
+       */
+      if (
+        (x - 1).toFixed(0) === (_x + _width / 2).toFixed(0) ||
+        (x + 1).toFixed(0) === (_x + _width / 2).toFixed(0)
+      ) {
+        setWillSnap(true);
+        setCObjects((obj) => {
+          const newObj = { ...obj };
+          newObj[selected].data.x = (_x + _width / 2) * zoom;
+          return newObj;
+        });
+        // cancel will snap so object can move again
+        setTimeout(() => {
+          setWillSnap(false);
+        }, snapDuration);
+      }
+
+      /**
+       * snap for right center alignment
+       */
+      if (
+        (x + width - 1).toFixed(0) === (_x + _width / 2).toFixed(0) ||
+        (x + width + 1).toFixed(0) === (_x + _width / 2).toFixed(0)
+      ) {
+        setWillSnap(true);
+        setCObjects((obj) => {
+          const newObj = { ...obj };
+          newObj[selected].data.x = (_x + _width / 2 - width) * zoom;
+          return newObj;
+        });
+        // cancel will snap so object can move again
+        setTimeout(() => {
+          setWillSnap(false);
+        }, snapDuration);
+      }
+
+      /**
+       * rulers for center vertical
+       */
+      if (centerSelectedObj[0].toFixed(0) === centerObj[0].toFixed(0)) {
+        // if selected object at the bottom of target
+        if (centerSelectedObj[1] - centerObj[1] > 0) {
+          rulers.push({
+            x: centerSelectedObj[0] * zoom,
+            y: centerObj[1] * zoom,
+            width: '1px',
+            height: (centerSelectedObj[1] - centerObj[1]) * zoom,
+          });
+        } else {
+          rulers.push({
+            x: centerSelectedObj[0] * zoom,
+            y: centerSelectedObj[1] * zoom,
+            width: '1px',
+            height: Math.abs(centerSelectedObj[1] - centerObj[1]) * zoom,
+          });
+        }
+      }
+
+      /**
+       * rulers for left vertical
+       */
+      if (x.toFixed(0) === _x.toFixed(0)) {
+        // if selected object at the bottom of target
+        if (y - _y > 0) {
+          rulers.push({
+            x: x * zoom,
+            y: (centerObj[1] - _height / 2) * zoom,
+            width: '1px',
+            height: (centerSelectedObj[1] - centerObj[1] + _height) * zoom,
+          });
+        } else {
+          rulers.push({
+            x: x * zoom,
+            y: (centerSelectedObj[1] - height / 2) * zoom,
+            width: '1px',
+            height: (Math.abs(centerSelectedObj[1] - centerObj[1]) + height) * zoom,
+          });
+        }
+      }
+
+      /**
+       * rulers for right vertical
+       */
+      if ((x + width).toFixed(0) === (_x + _width).toFixed(0)) {
+        // if selected object at the bottom of target
+        if (y - _y > 0) {
+          rulers.push({
+            x: (x + width) * zoom + 2,
+            y: (centerObj[1] - _height / 2) * zoom,
+            width: '1px',
+            height: (centerSelectedObj[1] - centerObj[1] + _height / 2) * zoom,
+          });
+        } else {
+          rulers.push({
+            x: (x + width) * zoom + 2,
+            y: (centerSelectedObj[1] - height / 2) * zoom,
+            width: '1px',
+            height: (Math.abs(centerSelectedObj[1] - centerObj[1]) + height) * zoom,
+          });
+        }
+      }
+
+      /**
+       * rulers for left right and left center vertical
+       */
+      if (
+        x.toFixed(0) === (_x + _width).toFixed(0) ||
+        x.toFixed(0) === (_x + _width / 2).toFixed(0)
+      ) {
+        // if selected object at the bottom of target
+        if (y - _y > 0) {
+          rulers.push({
+            x: x * zoom,
+            y: (centerObj[1] - _height / 2) * zoom,
+            width: '1px',
+            height: (centerSelectedObj[1] - centerObj[1] + _height / 2) * zoom,
+          });
+        } else {
+          rulers.push({
+            x: x * zoom,
+            y: (centerSelectedObj[1] - height / 2) * zoom,
+            width: '1px',
+            height: (Math.abs(centerSelectedObj[1] - centerObj[1]) + height) * zoom,
+          });
+        }
+      }
+
+      /**
+       * rulers for right left and right center vertical
+       */
+      if (
+        (x + width).toFixed(0) === _x.toFixed(0) ||
+        (x + width).toFixed(0) === (_x + _width / 2).toFixed(0)
+      ) {
+        // if selected object at the bottom of target
+        if (y - _y > 0) {
+          rulers.push({
+            x: (x + width) * zoom + 2,
+            y: (centerObj[1] - _height / 2) * zoom,
+            width: '1px',
+            height: (centerSelectedObj[1] - centerObj[1] + _height / 2) * zoom,
+          });
+        } else {
+          rulers.push({
+            x: (x + width) * zoom + 2,
+            y: (centerSelectedObj[1] - height / 2) * zoom,
+            width: '1px',
+            height: (Math.abs(centerSelectedObj[1] - centerObj[1]) + height) * zoom,
+          });
+        }
+      }
+    });
+
+    setSnapRulers(rulers);
+  }, [cObjects, selected, zoom, setCObjects, setWillSnap]);
 
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
     if (!ctrlKey) return;
@@ -201,7 +475,10 @@ const Canvas = () => {
   };
 
   const handleDeselect = () => {
-    if (!spaceKey) setSelected('');
+    if (!spaceKey) {
+      setSelected('');
+      setSnapRulers([]);
+    }
   };
 
   if (!initialized)
@@ -285,6 +562,19 @@ const Canvas = () => {
 
             return null;
           })}
+
+          {/* Snap Ruler Component */}
+          {snapRulers?.map(({ x, y, width, height }, i) => (
+            <Box
+              key={`rulers-${i}`}
+              position="absolute"
+              top={y}
+              left={x}
+              width={width}
+              height={height}
+              background="purple.600"
+            />
+          ))}
 
           {/* Background Layer Click Outside */}
           <Box

@@ -5,12 +5,13 @@ import {
   selectedObject,
   spaceKey as spaceKeyAtom,
   dynamicTextInput,
+  willSnap,
 } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
-import React, { useEffect, useRef, useState, memo } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { useMemo } from 'react';
-import { useMount } from 'react-use';
+import { useMount, useMeasure } from 'react-use';
 import WebFont from 'webfontloader';
 import { zoomCanvas } from '.';
 import { GiCrosshair } from 'react-icons/gi';
@@ -20,18 +21,18 @@ interface CanvasTextProps {
 }
 
 const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
-  const textRef = useRef<HTMLDivElement>(null);
+  const [textRef, { height, width }] = useMeasure<HTMLDivElement>();
   const [zoom] = useAtom(zoomCanvas);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
   const [selected, setSelected] = useAtom(selectedObject);
   const spaceKey = useAtomValue(spaceKeyAtom);
+  const isWilLSnap = useAtomValue(willSnap);
   const setDynamicInputText = useUpdateAtom(dynamicTextInput);
   const [prevZoom, setPrevZoom] = useState(zoom);
   const [triggerMove, setTriggerMove] = useState<boolean>(false);
   const [resize, setResize] = useState<boolean>(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [mousePosResize, setMousePosResize] = useState({ x: 0, y: 0 });
 
   const { data: textData } = useMemo(() => cObjects[id], [id, cObjects]);
 
@@ -42,6 +43,16 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       },
     });
   });
+
+  useEffect(() => {
+    setCObjects((objects) => {
+      const newObj = { ...objects };
+      newObj[id].data.height = height / zoom;
+      newObj[id].data.width = width / zoom;
+
+      return newObj;
+    });
+  }, [setCObjects, id, width, height, zoom, selected]);
 
   useEffect(() => {
     if (zoom) {
@@ -69,7 +80,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
 
       if (spaceKey) return;
 
-      if (triggerMove && activeToolbar === 'move') {
+      if (triggerMove && activeToolbar === 'move' && !isWilLSnap) {
         setCObjects((obj) => {
           const newCObjects = { ...obj };
           newCObjects[id].data.x = clientX - mousePos.x;
@@ -100,10 +111,10 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     id,
     setCObjects,
     resize,
-    mousePosResize.x,
     zoom,
     spaceKey,
     setActiveToolbar,
+    isWilLSnap,
   ]);
 
   useEffect(() => {
@@ -160,13 +171,12 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           x: e.clientX - textData.x,
           y: e.clientY - textData.y,
         });
-        setMousePosResize({
-          x: e.clientX,
-          y: e.clientY,
-        });
         if (resize) {
           setActiveToolbar('resize');
-        } else setTriggerMove(true);
+        } else {
+          setTriggerMove(true);
+          setActiveToolbar('move');
+        }
       }}
     >
       {selected === id ? (
@@ -194,14 +204,28 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
         />
       ) : null}
       {selected === id ? (
-        <Box
-          left={textData.align === 'left' ? '0' : textData.align === 'center' ? '50%' : '100%'}
-          top="50%"
-          transform="translate(-50%, -50%)"
-          position="absolute"
-        >
-          <GiCrosshair color="#4399E1" size={12 * zoom} />
-        </Box>
+        <>
+          <Box
+            left={textData.align === 'left' ? '0' : textData.align === 'center' ? '50%' : '100%'}
+            top="50%"
+            transform="translate(-50%, -50%)"
+            position="absolute"
+          >
+            <GiCrosshair color="#4399E1" size={12 * zoom} />
+          </Box>
+          <Box
+            pos="absolute"
+            bottom="-20px"
+            transform="translateX(-50%)"
+            left="50%"
+            background="blue.400"
+            color="white"
+            fontSize="xs"
+            width="max-content"
+          >
+            {textData.width?.toFixed(0)} x {textData.height?.toFixed(0)}
+          </Box>
+        </>
       ) : null}
       {textData.text}
     </Box>
