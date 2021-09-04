@@ -131,9 +131,9 @@ const Canvas = () => {
     const rulers: Ruler[] = [];
     const selectedObj = cObjects[selected];
     const snapDuration = 0;
-    let snapThreshold = 16;
+    let snapThreshold = 8;
     if (!selectedObj) return;
-    if (selectedObj.data.isSnapped) snapThreshold = 1;
+    if (selectedObj.data.isSnapped) snapThreshold = 0;
     const x = selectedObj.data.x / zoom;
     const y = selectedObj.data.y / zoom;
     const width = selectedObj.data.width ?? 0 / zoom;
