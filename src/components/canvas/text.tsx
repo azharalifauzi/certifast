@@ -6,6 +6,7 @@ import {
   spaceKey as spaceKeyAtom,
   dynamicTextInput,
   willSnap,
+  isObjectMoving,
 } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
@@ -26,6 +27,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
   const [selected, setSelected] = useAtom(selectedObject);
+  const [isTextMoving, setTextMoving] = useAtom(isObjectMoving);
   const spaceKey = useAtomValue(spaceKeyAtom);
   const isWilLSnap = useAtomValue(willSnap);
   const setDynamicInputText = useUpdateAtom(dynamicTextInput);
@@ -73,18 +75,19 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     const handleMouseUp = () => {
       setTriggerMove(false);
       setResize(false);
+      setTextMoving(false);
       if (activeToolbar === 'resize') setActiveToolbar('move');
     };
     const handleMouseMove = (e: MouseEvent) => {
       const { clientX, clientY, movementX } = e;
-
       if (spaceKey) return;
-
       if (triggerMove && activeToolbar === 'move' && !isWilLSnap) {
+        setTextMoving(true);
         setCObjects((obj) => {
           const newCObjects = { ...obj };
           newCObjects[id].data.x = clientX - mousePos.x;
           newCObjects[id].data.y = clientY - mousePos.y;
+          newCObjects[id].data.isSnapped = false;
           return newCObjects;
         });
       } else if (resize && activeToolbar === 'resize') {
@@ -115,6 +118,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     spaceKey,
     setActiveToolbar,
     isWilLSnap,
+    setTextMoving,
   ]);
 
   useEffect(() => {
@@ -178,6 +182,9 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           setActiveToolbar('move');
         }
       }}
+      onMouseMove={() => {
+        if (activeToolbar === 'move' && resize) setResize(false);
+      }}
     >
       {selected === id ? (
         <Box
@@ -201,6 +208,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           onMouseLeave={() => {
             if (activeToolbar === 'move') setResize(false);
           }}
+          onMouseMove={(e) => e.stopPropagation()}
         />
       ) : null}
       {selected === id ? (
