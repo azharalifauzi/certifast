@@ -55,32 +55,30 @@ const Sidebar = () => {
     const dynamicTextData = Object.values(cObjects);
     const certificateInput: any[][] = [];
 
+    let arrayOfFonts = queryClient.getQueriesData<GoogleFont[]>('fonts');
+
+    if (arrayOfFonts.length === 0) {
+      const font = await queryClient.fetchQuery({
+        queryKey: 'fonts',
+        queryFn: async () => {
+          const apiKey = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
+          const res = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`);
+
+          const data = await res.json();
+          const items: GoogleFont[] = data.items;
+
+          return items;
+        },
+      });
+
+      arrayOfFonts = [['', font]];
+    }
+
     const loop = dynamicTextData.map(async ({ data }) => {
       const inputs = dynamicTextInput[data.id];
       const widthTextTempalte = measureText(data.text, data.family, data.size).width;
       const color = hexRgb(data.color);
       const { red, green, blue, alpha } = color;
-
-      let arrayOfFonts = queryClient.getQueriesData<GoogleFont[]>('fonts');
-
-      if (arrayOfFonts.length === 0) {
-        const font = await queryClient.fetchQuery({
-          queryKey: 'fonts',
-          queryFn: async () => {
-            const apiKey = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
-            const res = await fetch(
-              `https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`
-            );
-
-            const data = await res.json();
-            const items: GoogleFont[] = data.items;
-
-            return items;
-          },
-        });
-
-        arrayOfFonts = [['', font]];
-      }
 
       const fonts = arrayOfFonts[arrayOfFonts.length - 1][1];
       const font = fonts.find(({ family }) => data.family === family);

@@ -54,7 +54,7 @@ const Toolbar = () => {
     window.addEventListener('keypress', handleKeyPress, { capture: true });
 
     return () => window.removeEventListener('keypress', handleKeyPress);
-  }, [preventToolbar]);
+  }, [preventToolbar, setActiveToolbar]);
 
   return (
     <>
