@@ -19,8 +19,8 @@ import {
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage } from 'jotai/utils';
 
-const CANVAS_HEIGHT = 7000;
-const CANVAS_WIDTH = 7000;
+const CANVAS_HEIGHT = 10_000;
+const CANVAS_WIDTH = 10_000;
 
 const topCanvas = atom(CANVAS_HEIGHT / 2);
 const leftCanvas = atom(CANVAS_WIDTH / 2);
@@ -506,8 +506,45 @@ const Canvas = () => {
       }
     });
 
+    if (isObjectMoving) {
+      /**
+       * snap and rulers for center to center of template
+       */
+      if ((x + width / 2).toFixed(0) === (template.width / 2).toFixed(0)) {
+        rulers.push({
+          x: (template.width / 2) * zoom,
+          y: 0,
+          width: '1px',
+          height: template.height * zoom,
+        });
+      }
+
+      if ((y + height / 2).toFixed(0) === (template.height / 2).toFixed(0)) {
+        rulers.push({
+          x: 0,
+          y: (template.height / 2) * zoom,
+          width: template.width * zoom,
+          height: '1px',
+        });
+      }
+
+      snapVertical(
+        x + width / 2 - snapThreshold <= template.width / 2 &&
+          x + width / 2 + snapThreshold >= template.width / 2,
+        (x + width / 2).toFixed(0) !== (template.width / 2).toFixed(0),
+        (template.width / 2 - width / 2) * zoom
+      );
+
+      snapHorizontal(
+        y + height / 2 - snapThreshold <= template.height / 2 &&
+          y + height / 2 + snapThreshold >= template.height / 2,
+        (y + height / 2).toFixed(0) !== (template.height / 2).toFixed(0),
+        (template.height / 2 - height / 2) * zoom
+      );
+    }
+
     setSnapRulers(rulers);
-  }, [cObjects, selected, zoom, setCObjects, setWillSnap, isObjectMoving]);
+  }, [cObjects, selected, zoom, setCObjects, setWillSnap, isObjectMoving, template]);
 
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
     if (!ctrlKey) return;
