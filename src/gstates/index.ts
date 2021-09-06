@@ -22,6 +22,9 @@ export type CanvasTextMeta = {
   family: string;
   color: string;
   id: string;
+  width?: number;
+  height?: number;
+  isSnapped: boolean;
 };
 
 type CanvasObject = {
@@ -44,3 +47,5 @@ export const selectedObject = atom<string>('');
 
 export const dynamicTextInput = atomWithStorage<Record<string, string[]>>('dynamicTextInput', {});
 export const preventToolbar = atom<boolean>(false);
+export const willSnap = atom<boolean>(false);
+export const isObjectMoving = atom<boolean>(false);
