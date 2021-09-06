@@ -156,6 +156,22 @@ const Canvas = () => {
       }, snapDuration);
     };
 
+    const snapHorizontal = (willSnapCondition: boolean, snapCondition: boolean, newY: number) => {
+      if (!willSnapCondition) return;
+      setWillSnap(true);
+      if (snapCondition)
+        setCObjects((obj) => {
+          const newObj = { ...obj };
+          newObj[selected].data.y = newY;
+          newObj[selected].data.isSnapped = true;
+          return newObj;
+        });
+      // cancel will snap so object can move again
+      setTimeout(() => {
+        setWillSnap(false);
+      }, snapDuration);
+    };
+
     Object.values(cObjects).forEach((obj) => {
       if (!isObjectMoving) return;
       if (obj.data.id === selected) return;
@@ -250,6 +266,90 @@ const Canvas = () => {
       );
 
       /**
+       * snap for top to top alignment
+       */
+      snapHorizontal(
+        y - snapThreshold <= _y && y + snapThreshold >= _y,
+        y.toFixed(0) !== _y.toFixed(0),
+        _y * zoom
+      );
+
+      /**
+       * snap for top to center alignment
+       */
+      snapHorizontal(
+        y - snapThreshold <= _y + _height / 2 && y + snapThreshold >= _y + _height / 2,
+        y.toFixed(0) !== (_y + _height / 2).toFixed(0),
+        (_y + _height / 2) * zoom
+      );
+
+      /**
+       * snap for top to bottom alignment
+       */
+      snapHorizontal(
+        y - snapThreshold <= _y + _height && y + snapThreshold >= _y + _height,
+        y.toFixed(0) !== (_y + _height).toFixed(0),
+        (_y + _height) * zoom
+      );
+
+      /**
+       * snap for center to top alignment
+       */
+      snapHorizontal(
+        y + height / 2 - snapThreshold <= _y && y + height / 2 + snapThreshold >= _y,
+        (y + height / 2).toFixed(0) !== _y.toFixed(0),
+        (_y - height / 2) * zoom
+      );
+
+      /**
+       * snap for center to center alignment
+       */
+      snapHorizontal(
+        y + height / 2 - snapThreshold <= _y + _height / 2 &&
+          y + height / 2 + snapThreshold >= _y + _height / 2,
+        (y + height / 2).toFixed(0) !== (_y + _height / 2).toFixed(0),
+        (_y + _height / 2 - height / 2) * zoom
+      );
+
+      /**
+       * snap for center to bottom alignment
+       */
+      snapHorizontal(
+        y + height / 2 - snapThreshold <= _y + _height &&
+          y + height / 2 + snapThreshold >= _y + _height,
+        (y + height / 2).toFixed(0) !== (_y + _height).toFixed(0),
+        (_y + _height - height / 2) * zoom
+      );
+
+      /**
+       * snap for bottom to top alignment
+       */
+      snapHorizontal(
+        y + height - snapThreshold <= _y && y + height + snapThreshold >= _y,
+        (y + height).toFixed(0) !== _y.toFixed(0),
+        (_y - height) * zoom
+      );
+
+      /**
+       * snap for bottom to center alignment
+       */
+      snapHorizontal(
+        y + height - snapThreshold <= _y + _height / 2 &&
+          y + height + snapThreshold >= _y + _height / 2,
+        (y + height).toFixed(0) !== (_y + _height / 2).toFixed(0),
+        (_y + _height / 2 - height) * zoom
+      );
+
+      /**
+       * snap for bottom to bottom alignment
+       */
+      snapHorizontal(
+        y + height - snapThreshold <= _y + _height && y + height + snapThreshold >= _y + _height,
+        (y + height).toFixed(0) !== (_y + _height).toFixed(0),
+        (_y + _height - height) * zoom
+      );
+
+      /**
        * rulers for center to center, center to left, center to right vertical
        */
       if (
@@ -323,6 +423,84 @@ const Canvas = () => {
             y: (centerSelectedObj[1] - height / 2) * zoom,
             width: '1px',
             height: (Math.abs(centerSelectedObj[1] - centerObj[1]) + height) * zoom,
+          });
+        }
+      }
+
+      /**
+       * rulers for top to top, top to center, top to bottom horizontal
+       */
+      if (
+        y.toFixed(0) === _y.toFixed(0) ||
+        y.toFixed(0) == (_y + _height).toFixed(0) ||
+        y.toFixed(0) === (_y + _height / 2).toFixed(0)
+      ) {
+        // if selected object at the right of target
+        if (x - _x > 0) {
+          rulers.push({
+            x: _x * zoom,
+            y: y * zoom,
+            width: (_width + width + x - _x - _width) * zoom,
+            height: '1px',
+          });
+        } else {
+          rulers.push({
+            x: x * zoom,
+            y: y * zoom,
+            width: (_width + width + _x - width - x) * zoom,
+            height: '1px',
+          });
+        }
+      }
+
+      /**
+       * rulers for center to top, center to center, center to bottom horizontal
+       */
+      if (
+        (y + height / 2).toFixed(0) === _y.toFixed(0) ||
+        (y + height / 2).toFixed(0) == (_y + _height).toFixed(0) ||
+        (y + height / 2).toFixed(0) === (_y + _height / 2).toFixed(0)
+      ) {
+        // if selected object at the right of target
+        if (x - _x > 0) {
+          rulers.push({
+            x: _x * zoom,
+            y: (y + height / 2) * zoom,
+            width: (_width + width + x - _x - _width) * zoom,
+            height: '1px',
+          });
+        } else {
+          rulers.push({
+            x: x * zoom,
+            y: (y + height / 2) * zoom,
+            width: (_width + width + _x - width - x) * zoom,
+            height: '1px',
+          });
+        }
+      }
+
+      /**
+       * rulers for bottom to top, bottom to center, bottom to bottom horizontal
+       */
+      if (
+        (y + height).toFixed(0) === _y.toFixed(0) ||
+        (y + height).toFixed(0) == (_y + _height).toFixed(0) ||
+        (y + height).toFixed(0) === (_y + _height / 2).toFixed(0)
+      ) {
+        // if selected object at the right of target
+        if (x - _x > 0) {
+          rulers.push({
+            x: _x * zoom,
+            y: (y + height) * zoom + 2,
+            width: (_width + width + x - _x - _width) * zoom,
+            height: '1px',
+          });
+        } else {
+          rulers.push({
+            x: x * zoom,
+            y: (y + height) * zoom + 2,
+            width: (_width + width + _x - width - x) * zoom,
+            height: '1px',
           });
         }
       }
