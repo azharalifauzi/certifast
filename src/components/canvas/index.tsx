@@ -361,16 +361,16 @@ const Canvas = () => {
         if (centerSelectedObj[1] - centerObj[1] > 0) {
           rulers.push({
             x: centerSelectedObj[0] * zoom,
-            y: centerObj[1] * zoom,
+            y: _y * zoom,
             width: '1px',
-            height: (centerSelectedObj[1] - centerObj[1]) * zoom,
+            height: (height + _height + y - _y - _height) * zoom,
           });
         } else {
           rulers.push({
             x: centerSelectedObj[0] * zoom,
-            y: centerSelectedObj[1] * zoom,
+            y: y * zoom,
             width: '1px',
-            height: Math.abs(centerSelectedObj[1] - centerObj[1]) * zoom,
+            height: (height + _height + _y - y - height) * zoom,
           });
         }
       }
@@ -387,16 +387,16 @@ const Canvas = () => {
         if (y - _y > 0) {
           rulers.push({
             x: x * zoom,
-            y: (centerObj[1] - _height / 2) * zoom,
+            y: _y * zoom,
             width: '1px',
-            height: (centerSelectedObj[1] - centerObj[1] + _height) * zoom,
+            height: (height + _height + y - _y - _height) * zoom,
           });
         } else {
           rulers.push({
             x: x * zoom,
-            y: (centerSelectedObj[1] - height / 2) * zoom,
+            y: y * zoom,
             width: '1px',
-            height: (Math.abs(centerSelectedObj[1] - centerObj[1]) + height) * zoom,
+            height: (height + _height + _y - y - height) * zoom,
           });
         }
       }
@@ -413,16 +413,16 @@ const Canvas = () => {
         if (y - _y > 0) {
           rulers.push({
             x: (x + width) * zoom + 2,
-            y: (centerObj[1] - _height / 2) * zoom,
+            y: _y * zoom,
             width: '1px',
-            height: (centerSelectedObj[1] - centerObj[1] + _height / 2) * zoom,
+            height: (height + _height + y - _y - _height) * zoom,
           });
         } else {
           rulers.push({
             x: (x + width) * zoom + 2,
-            y: (centerSelectedObj[1] - height / 2) * zoom,
+            y: y * zoom,
             width: '1px',
-            height: (Math.abs(centerSelectedObj[1] - centerObj[1]) + height) * zoom,
+            height: (height + _height + _y - y - height) * zoom,
           });
         }
       }
