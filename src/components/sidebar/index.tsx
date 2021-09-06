@@ -10,6 +10,7 @@ import {
   ModalOverlay,
   Progress,
   Text,
+  useToast,
 } from '@chakra-ui/react';
 import React, { useState, memo } from 'react';
 import {
@@ -44,6 +45,7 @@ const Sidebar = () => {
   const [progressState, setProgressState] = useState<
     'init' | 'load image' | 'printing' | 'archiving' | 'end'
   >('init');
+  const toast = useToast();
 
   const handleGenerateCertificate = async () => {
     const worker = new Worker('/worker.js');
@@ -55,24 +57,16 @@ const Sidebar = () => {
     const dynamicTextData = Object.values(cObjects);
     const certificateInput: any[][] = [];
 
-    let arrayOfFonts = queryClient.getQueriesData<GoogleFont[]>('fonts');
+    const arrayOfFonts = async (): Promise<GoogleFont[]> => {
+      const apiKey = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
+      const res = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`);
 
-    if (arrayOfFonts.length === 0) {
-      const font = await queryClient.fetchQuery({
-        queryKey: 'fonts',
-        queryFn: async () => {
-          const apiKey = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
-          const res = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`);
+      const data = await res.json();
+      const items: GoogleFont[] = data.items;
 
-          const data = await res.json();
-          const items: GoogleFont[] = data.items;
-
-          return items;
-        },
-      });
-
-      arrayOfFonts = [['', font]];
-    }
+      return items;
+    };
+    const fonts = await arrayOfFonts();
 
     const loop = dynamicTextData.map(async ({ data }) => {
       const inputs = dynamicTextInput[data.id];
@@ -80,7 +74,6 @@ const Sidebar = () => {
       const color = hexRgb(data.color);
       const { red, green, blue, alpha } = color;
 
-      const fonts = arrayOfFonts[arrayOfFonts.length - 1][1];
       const font = fonts.find(({ family }) => data.family === family);
       let fontWeight = data.weight;
       if (fontWeight === '400') fontWeight = 'regular';
@@ -119,7 +112,21 @@ const Sidebar = () => {
       });
     });
 
-    await Promise.all(loop);
+    try {
+      await Promise.all(loop);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: 'Something went wrong',
+        status: 'error',
+        position: 'top',
+        duration: 3000,
+      });
+      setIsProgressModalOpen(false);
+      setProgressState('end');
+      return;
+    }
+
     setTotalProgress(certificateInput.length);
 
     const imgBase64 = certifTemplate.file.split(',')[1];
