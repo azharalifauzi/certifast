@@ -11,8 +11,10 @@ import {
   Progress,
   Text,
   useToast,
+  ModalFooter,
 } from '@chakra-ui/react';
 import React, { useState, memo } from 'react';
+import VirtualizedSelect from 'react-virtualized-select';
 import {
   canvasObjects,
   certifTemplate as certifTemplateAtom,
@@ -24,15 +26,12 @@ import { useAtom } from 'jotai';
 import InputOption from './input-option';
 import { zoomCanvas } from 'components/canvas';
 import { decode, encode } from 'base64-arraybuffer';
-import { useQueryClient } from 'react-query';
 import { measureText } from 'helpers';
 import hexRgb from 'hex-rgb';
 import { useAtomValue } from 'jotai/utils';
 import Loading from 'components/loading';
 
 const Sidebar = () => {
-  const queryClient = useQueryClient();
-
   const [certifTemplate, setCertifTemplate] = useAtom(certifTemplateAtom);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [zoom, setZoom] = useAtom(zoomCanvas);
@@ -40,6 +39,10 @@ const Sidebar = () => {
   const [selected, setSelected] = useAtom(selectedObject);
   const [active, setActive] = useState<'general' | 'input'>('general');
   const [isProgressModalOpen, setIsProgressModalOpen] = useState<boolean>(false);
+  const [confirmGenerateCert, setConfirmGenerateCert] = useState<boolean>(false);
+  const [certificateInputs, setCertificateInputs] = useState<any[][]>([]);
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
+  const [inputMetaData, setInputMetaData] = useState<Record<string, number>>({});
   const [progress, setProgress] = useState<number>(0);
   const [totalProgress, setTotalProgress] = useState<number>(0);
   const [progressState, setProgressState] = useState<
@@ -47,13 +50,7 @@ const Sidebar = () => {
   >('init');
   const toast = useToast();
 
-  const handleGenerateCertificate = async () => {
-    const worker = new Worker('/worker.js');
-
-    worker.postMessage({ type: 'init', wasm_uri: '/abi/core_certifast_bg.wasm' });
-    setProgressState('init');
-    setIsProgressModalOpen(true);
-
+  const handleProcessData = async () => {
     const dynamicTextData = Object.values(cObjects);
     const certificateInput: any[][] = [];
 
@@ -66,9 +63,12 @@ const Sidebar = () => {
 
       return items;
     };
-    const fonts = await arrayOfFonts();
 
-    const loop = dynamicTextData.map(async ({ data }) => {
+    const fonts = await arrayOfFonts();
+    const inputMetaData: Record<string, number> = {};
+
+    const loop = dynamicTextData.map(async ({ data }, idx) => {
+      inputMetaData[data.id] = idx;
       const inputs = dynamicTextInput[data.id];
       const widthTextTempalte = measureText(data.text, data.family, data.size).width;
       const color = hexRgb(data.color);
@@ -122,12 +122,35 @@ const Sidebar = () => {
         position: 'top',
         duration: 3000,
       });
-      setIsProgressModalOpen(false);
-      setProgressState('end');
       return;
     }
 
+    setInputMetaData(inputMetaData);
     setTotalProgress(certificateInput.length);
+    setCertificateInputs(certificateInput);
+    setConfirmGenerateCert(true);
+  };
+
+  const handleGenerateCertificate = () => {
+    const worker = new Worker('/worker.js');
+
+    worker.postMessage({ type: 'init', wasm_uri: '/abi/core_certifast_bg.wasm' });
+    setProgressState('init');
+    setIsProgressModalOpen(true);
+
+    const certificateInput: any[][] = [...certificateInputs];
+
+    if (selectedFileName) {
+      const index = inputMetaData[selectedFileName];
+
+      certificateInput.forEach((_, idx) => {
+        const temp = certificateInput[idx][0];
+        certificateInput[idx][0] = certificateInput[idx][index];
+        certificateInput[idx][index] = temp;
+      });
+    }
+
+    setConfirmGenerateCert(false);
 
     const imgBase64 = certifTemplate.file.split(',')[1];
     const arrBuff = decode(imgBase64);
@@ -208,6 +231,43 @@ const Sidebar = () => {
           </ModalBody>
         </ModalContent>
       </Modal>
+      <Modal isCentered isOpen={confirmGenerateCert} onClose={() => setConfirmGenerateCert(false)}>
+        <ModalOverlay />
+        <ModalContent h="48">
+          <ModalBody pt="9" fontSize="sm">
+            <Text fontWeight="semibold" mb="4">
+              Choose which input that will become a file name:
+            </Text>
+            <VirtualizedSelect
+              searchable={false}
+              clearable={false}
+              options={Object.values(cObjects).map(({ data }) => ({
+                label: data.text,
+                value: data.id,
+              }))}
+              value={selectedFileName || Object.keys(cObjects)[0]}
+              // @ts-ignore
+              onChange={({ value }) => {
+                setSelectedFileName(value);
+              }}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              onClick={() => setConfirmGenerateCert(false)}
+              colorScheme="black"
+              variant="outline"
+              size="sm"
+              mr="2"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleGenerateCertificate} colorScheme="blue" size="sm">
+              Generate
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       <Box
         background="white"
         top={0}
@@ -276,7 +336,7 @@ const Sidebar = () => {
                   Export
                 </Text>
                 <Button
-                  onClick={handleGenerateCertificate}
+                  onClick={handleProcessData}
                   variant="outline"
                   colorScheme="black"
                   w="100%"
