@@ -12,8 +12,14 @@ import {
   Text,
   useToast,
   ModalFooter,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
 } from '@chakra-ui/react';
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useRef } from 'react';
 import VirtualizedSelect from 'react-virtualized-select';
 import {
   canvasObjects,
@@ -40,6 +46,7 @@ const Sidebar = () => {
   const [active, setActive] = useState<'general' | 'input'>('general');
   const [isProgressModalOpen, setIsProgressModalOpen] = useState<boolean>(false);
   const [confirmGenerateCert, setConfirmGenerateCert] = useState<boolean>(false);
+  const [confirmResetProject, setConfirmResetProject] = useState<boolean>(false);
   const [certificateInputs, setCertificateInputs] = useState<any[][]>([]);
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [inputMetaData, setInputMetaData] = useState<Record<string, number>>({});
@@ -189,6 +196,16 @@ const Sidebar = () => {
     setProgressState('end');
   };
 
+  const handleReset = () => {
+    setCObjects({});
+    setCertifTemplate({
+      ...certifTemplate,
+      file: '',
+    });
+    setSelected('');
+    setZoom(1.0);
+  };
+
   return (
     <>
       <Modal
@@ -268,6 +285,11 @@ const Sidebar = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+      <ResetModal
+        isOpen={confirmResetProject}
+        onClose={() => setConfirmResetProject(false)}
+        onReset={handleReset}
+      />
       <Box
         background="white"
         top={0}
@@ -312,13 +334,7 @@ const Sidebar = () => {
               <Box borderBottom="1px solid" borderColor="gray.300" p="4">
                 <Button
                   onClick={() => {
-                    setCObjects({});
-                    setCertifTemplate({
-                      ...certifTemplate,
-                      file: '',
-                    });
-                    setSelected('');
-                    setZoom(1.0);
+                    setConfirmResetProject(true);
                   }}
                   variant="outline"
                   colorScheme="red"
@@ -368,3 +384,45 @@ const Sidebar = () => {
 };
 
 export default memo(Sidebar);
+
+interface ResetModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onReset: () => void;
+}
+
+const ResetModal: React.FC<ResetModalProps> = ({ isOpen, onClose, onReset }) => {
+  const cancelRef = useRef(null);
+
+  return (
+    <AlertDialog isCentered isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
+      <AlertDialogOverlay>
+        <AlertDialogContent fontSize="sm">
+          <AlertDialogHeader fontSize="md" fontWeight="bold">
+            Reset Project
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            Are you sure? You can&apos;t undo this action afterwards.
+          </AlertDialogBody>
+          <AlertDialogFooter>
+            <Button size="sm" ref={cancelRef} onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              colorScheme="red"
+              variant="outline"
+              onClick={() => {
+                onReset();
+                onClose();
+              }}
+              ml={3}
+            >
+              Reset
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialogOverlay>
+    </AlertDialog>
+  );
+};
