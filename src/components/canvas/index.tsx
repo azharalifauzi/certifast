@@ -12,12 +12,14 @@ import {
   selectedObject,
   spaceKey as spaceKeyAtom,
   ctrlKey as ctrlKeyAtom,
+  shiftKey as shiftKeyAtom,
   isOutsideCanvas as isMouseOutsideCanvasAtom,
   willSnap,
   isObjectMoving as isObjectMovingAtom,
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage } from 'jotai/utils';
+import { debounce } from 'helpers';
 
 const CANVAS_HEIGHT = 10_000;
 const CANVAS_WIDTH = 10_000;
@@ -42,9 +44,10 @@ const Canvas = () => {
   const [selected, setSelected] = useAtom(selectedObject);
   const [ctrlKey, setCtrlKey] = useAtom(ctrlKeyAtom);
   const [spaceKey, setSpaceKey] = useAtom(spaceKeyAtom);
+  const [shiftKey, setShiftKey] = useAtom(shiftKeyAtom);
   const [isMouseOutsideCanvas, setIsMouseOutsideCanvas] = useAtom(isMouseOutsideCanvasAtom);
   const [_, setWillSnap] = useAtom(willSnap);
-  const [isObjectMoving] = useAtom(isObjectMovingAtom);
+  const [isObjectMoving, setObjectMoving] = useAtom(isObjectMovingAtom);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
@@ -78,10 +81,12 @@ const Canvas = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Control' || e.metaKey) setCtrlKey(true);
       if (e.key === ' ') setSpaceKey(true);
+      if (e.shiftKey) setShiftKey(true);
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Control' || !e.metaKey) setCtrlKey(false);
       if (e.key === ' ') setSpaceKey(false);
+      if (e.shiftKey) setShiftKey(false);
     };
 
     window.addEventListener('mouseup', handleMouseUp);
@@ -93,7 +98,7 @@ const Canvas = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [setCtrlKey, setSpaceKey]);
+  }, [setCtrlKey, setSpaceKey, setShiftKey]);
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -545,6 +550,62 @@ const Canvas = () => {
 
     setSnapRulers(rulers);
   }, [cObjects, selected, zoom, setCObjects, setWillSnap, isObjectMoving, template]);
+
+  // Effect for trigger moving object using arrow keys
+  useEffect(() => {
+    const handleMovingFalse = debounce(() => setObjectMoving(false), 800);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selected) return;
+
+      switch (e.key) {
+        case 'ArrowUp':
+          setObjectMoving(true);
+          setCObjects((obj) => {
+            const newObj = { ...obj };
+            if (e.shiftKey) newObj[selected].data.y -= 10;
+            else newObj[selected].data.y--;
+            return newObj;
+          });
+          break;
+        case 'ArrowDown':
+          setObjectMoving(true);
+          setCObjects((obj) => {
+            const newObj = { ...obj };
+            if (e.shiftKey) newObj[selected].data.y += 10;
+            else newObj[selected].data.y++;
+            return newObj;
+          });
+          break;
+        case 'ArrowLeft':
+          setObjectMoving(true);
+          setCObjects((obj) => {
+            const newObj = { ...obj };
+            if (e.shiftKey) newObj[selected].data.x -= 10;
+            else newObj[selected].data.x--;
+            return newObj;
+          });
+          break;
+        case 'ArrowRight':
+          setObjectMoving(true);
+          setCObjects((obj) => {
+            const newObj = { ...obj };
+            if (e.shiftKey) newObj[selected].data.x += 10;
+            else newObj[selected].data.x++;
+            return newObj;
+          });
+          break;
+        default:
+          break;
+      }
+
+      handleMovingFalse();
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: false });
+
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selected, setCObjects, setObjectMoving]);
 
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
     if (!ctrlKey) return;

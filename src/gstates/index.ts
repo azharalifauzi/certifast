@@ -41,6 +41,7 @@ type ActiveToolbar = 'text' | 'move' | 'resize';
 export const activeToolbar = atom<ActiveToolbar>('move');
 export const spaceKey = atom<boolean>(false);
 export const ctrlKey = atom<boolean>(false);
+export const shiftKey = atom<boolean>(false);
 export const isOutsideCanvas = atom<boolean>(false);
 
 export const selectedObject = atom<string>('');
