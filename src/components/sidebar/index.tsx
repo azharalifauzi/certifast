@@ -110,7 +110,7 @@ const Sidebar = () => {
 
         certificateInput[index].push({
           y,
-          text: val,
+          text: val?.toString(),
           x: data.align === 'left' ? x : x + textWidth * 0.06,
           font_size: data.size * 1.067,
           font_fam: fontBase64,
