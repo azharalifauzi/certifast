@@ -36,6 +36,7 @@ import { measureText } from 'helpers';
 import hexRgb from 'hex-rgb';
 import { useAtomValue } from 'jotai/utils';
 import Loading from 'components/loading';
+import * as gtag from 'libs/gtag';
 
 const Sidebar = () => {
   const [certifTemplate, setCertifTemplate] = useAtom(certifTemplateAtom);
@@ -136,6 +137,12 @@ const Sidebar = () => {
     setTotalProgress(certificateInput.length);
     setCertificateInputs(certificateInput);
     setConfirmGenerateCert(true);
+    gtag.event({
+      action: 'init_generate_certificate',
+      label: 'method',
+      category: 'engagement',
+      value: 0,
+    });
   };
 
   const handleGenerateCertificate = () => {
@@ -182,6 +189,10 @@ const Sidebar = () => {
         URL.revokeObjectURL(url);
         setIsProgressModalOpen(false);
         setProgressState('end');
+        gtag.customDimension(['certificates_count', 'download_size'], 'generate_certificate', {
+          certificates_count: certificateInput.length,
+          download_size: (blob.size / 1024 ** 2).toFixed(2), // send data in megabytes unit
+        });
       }
 
       if (msg.type === 'progress') {
@@ -321,7 +332,12 @@ const Sidebar = () => {
           </GridItem>
           <GridItem
             userSelect="none"
-            onClick={() => setActive('input')}
+            onClick={() => {
+              setActive('input');
+              if (Object.keys(cObjects).length > 0) {
+                gtag.event({ action: 'manage_input', label: '', category: 'engagement', value: 0 });
+              }
+            }}
             _hover={{ color: 'black' }}
             color={active === 'input' ? 'black' : 'gray.400'}
           >

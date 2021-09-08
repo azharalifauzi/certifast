@@ -6,6 +6,7 @@ import { certifTemplate } from 'gstates';
 import { Box, Flex, Text, useToast } from '@chakra-ui/react';
 import { FileDrop } from 'react-file-drop';
 import { BsCardImage } from 'react-icons/bs';
+import * as gtag from 'libs/gtag';
 import 'react-select/dist/react-select.css';
 import 'react-virtualized/styles.css';
 import 'react-virtualized-select/styles.css';
@@ -54,6 +55,12 @@ function App() {
           height: this.height,
           // @ts-ignore
           width: this.width,
+        });
+        gtag.event({
+          action: 'upload_template',
+          category: 'engagement',
+          label: 'method',
+          value: 0,
         });
       };
 
