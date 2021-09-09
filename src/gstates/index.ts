@@ -22,6 +22,9 @@ export type CanvasTextMeta = {
   family: string;
   color: string;
   id: string;
+  width?: number;
+  height?: number;
+  isSnapped: boolean;
 };
 
 type CanvasObject = {
@@ -38,9 +41,12 @@ type ActiveToolbar = 'text' | 'move' | 'resize';
 export const activeToolbar = atom<ActiveToolbar>('move');
 export const spaceKey = atom<boolean>(false);
 export const ctrlKey = atom<boolean>(false);
+export const shiftKey = atom<boolean>(false);
 export const isOutsideCanvas = atom<boolean>(false);
 
 export const selectedObject = atom<string>('');
 
 export const dynamicTextInput = atomWithStorage<Record<string, string[]>>('dynamicTextInput', {});
 export const preventToolbar = atom<boolean>(false);
+export const willSnap = atom<boolean>(false);
+export const isObjectMoving = atom<boolean>(false);

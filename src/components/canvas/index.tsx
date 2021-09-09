@@ -12,13 +12,17 @@ import {
   selectedObject,
   spaceKey as spaceKeyAtom,
   ctrlKey as ctrlKeyAtom,
+  shiftKey as shiftKeyAtom,
   isOutsideCanvas as isMouseOutsideCanvasAtom,
+  willSnap,
+  isObjectMoving as isObjectMovingAtom,
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage } from 'jotai/utils';
+import { debounce } from 'helpers';
 
-const CANVAS_HEIGHT = 7000;
-const CANVAS_WIDTH = 7000;
+const CANVAS_HEIGHT = 10_000;
+const CANVAS_WIDTH = 10_000;
 
 const topCanvas = atom(CANVAS_HEIGHT / 2);
 const leftCanvas = atom(CANVAS_WIDTH / 2);
@@ -40,10 +44,14 @@ const Canvas = () => {
   const [selected, setSelected] = useAtom(selectedObject);
   const [ctrlKey, setCtrlKey] = useAtom(ctrlKeyAtom);
   const [spaceKey, setSpaceKey] = useAtom(spaceKeyAtom);
+  const [shiftKey, setShiftKey] = useAtom(shiftKeyAtom);
   const [isMouseOutsideCanvas, setIsMouseOutsideCanvas] = useAtom(isMouseOutsideCanvasAtom);
+  const [_, setWillSnap] = useAtom(willSnap);
+  const [isObjectMoving, setObjectMoving] = useAtom(isObjectMovingAtom);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
+  const [snapRulers, setSnapRulers] = useState<Ruler[]>([]);
   const [windowRef, { width: windowW, height: windowH }] = useMeasure<HTMLDivElement>();
   const [canvasRef, { width: canvasW, height: canvasH }] = useMeasure<HTMLDivElement>();
 
@@ -73,10 +81,12 @@ const Canvas = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Control' || e.metaKey) setCtrlKey(true);
       if (e.key === ' ') setSpaceKey(true);
+      if (e.shiftKey) setShiftKey(true);
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Control' || !e.metaKey) setCtrlKey(false);
       if (e.key === ' ') setSpaceKey(false);
+      if (e.shiftKey) setShiftKey(false);
     };
 
     window.addEventListener('mouseup', handleMouseUp);
@@ -88,7 +98,7 @@ const Canvas = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [setCtrlKey, setSpaceKey]);
+  }, [setCtrlKey, setSpaceKey, setShiftKey]);
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -103,25 +113,499 @@ const Canvas = () => {
   // mouse position listener relative to certif template
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!selected) {
-        const { clientX, clientY } = e;
+      const { clientX, clientY } = e;
 
-        const relativeToCanvasX = (CANVAS_WIDTH / 2 - template.width / 2) * zoom;
-        const relativeToCanvasY = (CANVAS_HEIGHT / 2 - template.height / 2) * zoom;
+      const relativeToCanvasX = (CANVAS_WIDTH / 2 - template.width / 2) * zoom;
+      const relativeToCanvasY = (CANVAS_HEIGHT / 2 - template.height / 2) * zoom;
 
-        const newPosition = {
-          x: -(left + relativeToCanvasX - clientX),
-          y: -(top + relativeToCanvasY - clientY),
-        };
+      const newPosition = {
+        x: -(left + relativeToCanvasX - clientX),
+        y: -(top + relativeToCanvasY - clientY),
+      };
 
-        setMousePosRelativeToTemplate(newPosition);
-      }
+      setMousePosRelativeToTemplate(newPosition);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
 
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [left, top, template.width, template.height, selected, setMousePosRelativeToTemplate, zoom]);
+
+  // Effect to trigger rulers and snaps
+  useEffect(() => {
+    const rulers: Ruler[] = [];
+    const selectedObj = cObjects[selected];
+    const snapDuration = 0;
+    let snapThreshold = 8;
+    if (!selectedObj) return;
+    if (selectedObj.data.isSnapped) snapThreshold = 0;
+    const x = selectedObj.data.x / zoom;
+    const y = selectedObj.data.y / zoom;
+    const width = selectedObj.data.width ?? 0 / zoom;
+    const height = selectedObj.data.height ?? 0 / zoom;
+    const centerSelectedObj = [x + width / 2, y + height / 2];
+
+    const snapVertical = (willSnapCondition: boolean, snapCondition: boolean, newX: number) => {
+      if (!willSnapCondition) return;
+      setWillSnap(true);
+      if (snapCondition)
+        setCObjects((obj) => {
+          const newObj = { ...obj };
+          newObj[selected].data.x = newX;
+          newObj[selected].data.isSnapped = true;
+          return newObj;
+        });
+      // cancel will snap so object can move again
+      setTimeout(() => {
+        setWillSnap(false);
+      }, snapDuration);
+    };
+
+    const snapHorizontal = (willSnapCondition: boolean, snapCondition: boolean, newY: number) => {
+      if (!willSnapCondition) return;
+      setWillSnap(true);
+      if (snapCondition)
+        setCObjects((obj) => {
+          const newObj = { ...obj };
+          newObj[selected].data.y = newY;
+          newObj[selected].data.isSnapped = true;
+          return newObj;
+        });
+      // cancel will snap so object can move again
+      setTimeout(() => {
+        setWillSnap(false);
+      }, snapDuration);
+    };
+
+    Object.values(cObjects).forEach((obj) => {
+      if (!isObjectMoving) return;
+      if (obj.data.id === selected) return;
+      const _x = obj.data.x / zoom;
+      const _y = obj.data.y / zoom;
+      const _width = obj.data.width ?? 0 / zoom;
+      const _height = obj.data.height ?? 0 / zoom;
+      const centerObj = [_x + _width / 2, _y + _height / 2];
+
+      /**
+       * snap for left alignment
+       */
+      snapVertical(
+        x - snapThreshold <= _x && x + snapThreshold >= _x,
+        x.toFixed(0) !== _x.toFixed(0),
+        _x * zoom
+      );
+
+      /**
+       * snap for right alignment
+       */
+      snapVertical(
+        x + width - snapThreshold <= _x + _width && x + width + snapThreshold >= _x + _width,
+        (x + width).toFixed(0) !== (_x + _width).toFixed(0),
+        (_x + _width - width) * zoom
+      );
+
+      /**
+       * snap for center alignment
+       */
+      snapVertical(
+        x + width / 2 - snapThreshold <= _x + _width / 2 &&
+          x + width / 2 + snapThreshold >= _x + _width / 2,
+        (x + width / 2).toFixed(0) !== (_x + _width / 2).toFixed(0),
+        (_x + _width / 2 - width / 2) * zoom
+      );
+
+      /**
+       * snap for left right alignment
+       */
+      snapVertical(
+        x - snapThreshold <= _x + _width && x + snapThreshold >= _x + _width,
+        x.toFixed(0) !== (_x + _width).toFixed(0),
+        (_x + _width) * zoom
+      );
+
+      /**
+       * snap for right left alignment
+       */
+      snapVertical(
+        x + width - snapThreshold <= _x && x + width + snapThreshold >= _x,
+        (x + width).toFixed(0) !== _x.toFixed(0),
+        (_x - width) * zoom
+      );
+
+      /**
+       * snap for left center alignment
+       */
+      snapVertical(
+        x - snapThreshold <= _x + _width / 2 && x + snapThreshold >= _x + _width / 2,
+        x.toFixed(0) !== (_x + _width / 2).toFixed(0),
+        (_x + _width / 2) * zoom
+      );
+
+      /**
+       * snap for right center alignment
+       */
+      snapVertical(
+        x + width - snapThreshold <= _x + _width / 2 &&
+          x + width + snapThreshold >= _x + _width / 2,
+        (x + width).toFixed(0) !== (_x + _width / 2).toFixed(0),
+        (_x + _width / 2 - width) * zoom
+      );
+
+      /**
+       * snap for center to left alignment
+       */
+      snapVertical(
+        x + width / 2 - snapThreshold <= _x && x + width / 2 + snapThreshold >= _x,
+        (x + width / 2).toFixed(0) !== _x.toFixed(0),
+        (_x - width / 2) * zoom
+      );
+
+      /**
+       * snap for center to right alignment
+       */
+      snapVertical(
+        x + width / 2 - snapThreshold <= _x + _width &&
+          x + width / 2 + snapThreshold >= _x + _width,
+        (x + width / 2).toFixed(0) !== (_x + _width).toFixed(0),
+        (_x + _width - width / 2) * zoom
+      );
+
+      /**
+       * snap for top to top alignment
+       */
+      snapHorizontal(
+        y - snapThreshold <= _y && y + snapThreshold >= _y,
+        y.toFixed(0) !== _y.toFixed(0),
+        _y * zoom
+      );
+
+      /**
+       * snap for top to center alignment
+       */
+      snapHorizontal(
+        y - snapThreshold <= _y + _height / 2 && y + snapThreshold >= _y + _height / 2,
+        y.toFixed(0) !== (_y + _height / 2).toFixed(0),
+        (_y + _height / 2) * zoom
+      );
+
+      /**
+       * snap for top to bottom alignment
+       */
+      snapHorizontal(
+        y - snapThreshold <= _y + _height && y + snapThreshold >= _y + _height,
+        y.toFixed(0) !== (_y + _height).toFixed(0),
+        (_y + _height) * zoom
+      );
+
+      /**
+       * snap for center to top alignment
+       */
+      snapHorizontal(
+        y + height / 2 - snapThreshold <= _y && y + height / 2 + snapThreshold >= _y,
+        (y + height / 2).toFixed(0) !== _y.toFixed(0),
+        (_y - height / 2) * zoom
+      );
+
+      /**
+       * snap for center to center alignment
+       */
+      snapHorizontal(
+        y + height / 2 - snapThreshold <= _y + _height / 2 &&
+          y + height / 2 + snapThreshold >= _y + _height / 2,
+        (y + height / 2).toFixed(0) !== (_y + _height / 2).toFixed(0),
+        (_y + _height / 2 - height / 2) * zoom
+      );
+
+      /**
+       * snap for center to bottom alignment
+       */
+      snapHorizontal(
+        y + height / 2 - snapThreshold <= _y + _height &&
+          y + height / 2 + snapThreshold >= _y + _height,
+        (y + height / 2).toFixed(0) !== (_y + _height).toFixed(0),
+        (_y + _height - height / 2) * zoom
+      );
+
+      /**
+       * snap for bottom to top alignment
+       */
+      snapHorizontal(
+        y + height - snapThreshold <= _y && y + height + snapThreshold >= _y,
+        (y + height).toFixed(0) !== _y.toFixed(0),
+        (_y - height) * zoom
+      );
+
+      /**
+       * snap for bottom to center alignment
+       */
+      snapHorizontal(
+        y + height - snapThreshold <= _y + _height / 2 &&
+          y + height + snapThreshold >= _y + _height / 2,
+        (y + height).toFixed(0) !== (_y + _height / 2).toFixed(0),
+        (_y + _height / 2 - height) * zoom
+      );
+
+      /**
+       * snap for bottom to bottom alignment
+       */
+      snapHorizontal(
+        y + height - snapThreshold <= _y + _height && y + height + snapThreshold >= _y + _height,
+        (y + height).toFixed(0) !== (_y + _height).toFixed(0),
+        (_y + _height - height) * zoom
+      );
+
+      /**
+       * rulers for center to center, center to left, center to right vertical
+       */
+      if (
+        centerSelectedObj[0].toFixed(0) === centerObj[0].toFixed(0) ||
+        centerSelectedObj[0].toFixed(0) === _x.toFixed(0) ||
+        centerSelectedObj[0].toFixed(0) === (_x + _width).toFixed(0)
+      ) {
+        // if selected object at the bottom of target
+        if (centerSelectedObj[1] - centerObj[1] > 0) {
+          rulers.push({
+            x: centerSelectedObj[0] * zoom,
+            y: _y * zoom,
+            width: '1px',
+            height: (height + _height + y - _y - _height) * zoom,
+          });
+        } else {
+          rulers.push({
+            x: centerSelectedObj[0] * zoom,
+            y: y * zoom,
+            width: '1px',
+            height: (height + _height + _y - y - height) * zoom,
+          });
+        }
+      }
+
+      /**
+       * rulers for left to left, left to right, left to center vertical
+       */
+      if (
+        x.toFixed(0) === _x.toFixed(0) ||
+        x.toFixed(0) === (_x + _width).toFixed(0) ||
+        x.toFixed(0) === (_x + _width / 2).toFixed(0)
+      ) {
+        // if selected object at the bottom of target
+        if (y - _y > 0) {
+          rulers.push({
+            x: x * zoom,
+            y: _y * zoom,
+            width: '1px',
+            height: (height + _height + y - _y - _height) * zoom,
+          });
+        } else {
+          rulers.push({
+            x: x * zoom,
+            y: y * zoom,
+            width: '1px',
+            height: (height + _height + _y - y - height) * zoom,
+          });
+        }
+      }
+
+      /**
+       * rulers for right to right, right to left, right to center vertical
+       */
+      if (
+        (x + width).toFixed(0) === (_x + _width).toFixed(0) ||
+        (x + width).toFixed(0) === _x.toFixed(0) ||
+        (x + width).toFixed(0) === (_x + _width / 2).toFixed(0)
+      ) {
+        // if selected object at the bottom of target
+        if (y - _y > 0) {
+          rulers.push({
+            x: (x + width) * zoom + 2,
+            y: _y * zoom,
+            width: '1px',
+            height: (height + _height + y - _y - _height) * zoom,
+          });
+        } else {
+          rulers.push({
+            x: (x + width) * zoom + 2,
+            y: y * zoom,
+            width: '1px',
+            height: (height + _height + _y - y - height) * zoom,
+          });
+        }
+      }
+
+      /**
+       * rulers for top to top, top to center, top to bottom horizontal
+       */
+      if (
+        y.toFixed(0) === _y.toFixed(0) ||
+        y.toFixed(0) == (_y + _height).toFixed(0) ||
+        y.toFixed(0) === (_y + _height / 2).toFixed(0)
+      ) {
+        // if selected object at the right of target
+        if (x - _x > 0) {
+          rulers.push({
+            x: _x * zoom,
+            y: y * zoom,
+            width: (_width + width + x - _x - _width) * zoom,
+            height: '1px',
+          });
+        } else {
+          rulers.push({
+            x: x * zoom,
+            y: y * zoom,
+            width: (_width + width + _x - width - x) * zoom,
+            height: '1px',
+          });
+        }
+      }
+
+      /**
+       * rulers for center to top, center to center, center to bottom horizontal
+       */
+      if (
+        (y + height / 2).toFixed(0) === _y.toFixed(0) ||
+        (y + height / 2).toFixed(0) == (_y + _height).toFixed(0) ||
+        (y + height / 2).toFixed(0) === (_y + _height / 2).toFixed(0)
+      ) {
+        // if selected object at the right of target
+        if (x - _x > 0) {
+          rulers.push({
+            x: _x * zoom,
+            y: (y + height / 2) * zoom,
+            width: (_width + width + x - _x - _width) * zoom,
+            height: '1px',
+          });
+        } else {
+          rulers.push({
+            x: x * zoom,
+            y: (y + height / 2) * zoom,
+            width: (_width + width + _x - width - x) * zoom,
+            height: '1px',
+          });
+        }
+      }
+
+      /**
+       * rulers for bottom to top, bottom to center, bottom to bottom horizontal
+       */
+      if (
+        (y + height).toFixed(0) === _y.toFixed(0) ||
+        (y + height).toFixed(0) == (_y + _height).toFixed(0) ||
+        (y + height).toFixed(0) === (_y + _height / 2).toFixed(0)
+      ) {
+        // if selected object at the right of target
+        if (x - _x > 0) {
+          rulers.push({
+            x: _x * zoom,
+            y: (y + height) * zoom + 2,
+            width: (_width + width + x - _x - _width) * zoom,
+            height: '1px',
+          });
+        } else {
+          rulers.push({
+            x: x * zoom,
+            y: (y + height) * zoom + 2,
+            width: (_width + width + _x - width - x) * zoom,
+            height: '1px',
+          });
+        }
+      }
+    });
+
+    if (isObjectMoving) {
+      /**
+       * snap and rulers for center to center of template
+       */
+      if ((x + width / 2).toFixed(0) === (template.width / 2).toFixed(0)) {
+        rulers.push({
+          x: (template.width / 2) * zoom,
+          y: 0,
+          width: '1px',
+          height: template.height * zoom,
+        });
+      }
+
+      if ((y + height / 2).toFixed(0) === (template.height / 2).toFixed(0)) {
+        rulers.push({
+          x: 0,
+          y: (template.height / 2) * zoom,
+          width: template.width * zoom,
+          height: '1px',
+        });
+      }
+
+      snapVertical(
+        x + width / 2 - snapThreshold <= template.width / 2 &&
+          x + width / 2 + snapThreshold >= template.width / 2,
+        (x + width / 2).toFixed(0) !== (template.width / 2).toFixed(0),
+        (template.width / 2 - width / 2) * zoom
+      );
+
+      snapHorizontal(
+        y + height / 2 - snapThreshold <= template.height / 2 &&
+          y + height / 2 + snapThreshold >= template.height / 2,
+        (y + height / 2).toFixed(0) !== (template.height / 2).toFixed(0),
+        (template.height / 2 - height / 2) * zoom
+      );
+    }
+
+    setSnapRulers(rulers);
+  }, [cObjects, selected, zoom, setCObjects, setWillSnap, isObjectMoving, template]);
+
+  // Effect for trigger moving object using arrow keys
+  useEffect(() => {
+    const handleMovingFalse = debounce(() => setObjectMoving(false), 800);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selected) return;
+
+      switch (e.key) {
+        case 'ArrowUp':
+          setObjectMoving(true);
+          setCObjects((obj) => {
+            const newObj = { ...obj };
+            if (e.shiftKey) newObj[selected].data.y -= 10;
+            else newObj[selected].data.y--;
+            return newObj;
+          });
+          break;
+        case 'ArrowDown':
+          setObjectMoving(true);
+          setCObjects((obj) => {
+            const newObj = { ...obj };
+            if (e.shiftKey) newObj[selected].data.y += 10;
+            else newObj[selected].data.y++;
+            return newObj;
+          });
+          break;
+        case 'ArrowLeft':
+          setObjectMoving(true);
+          setCObjects((obj) => {
+            const newObj = { ...obj };
+            if (e.shiftKey) newObj[selected].data.x -= 10;
+            else newObj[selected].data.x--;
+            return newObj;
+          });
+          break;
+        case 'ArrowRight':
+          setObjectMoving(true);
+          setCObjects((obj) => {
+            const newObj = { ...obj };
+            if (e.shiftKey) newObj[selected].data.x += 10;
+            else newObj[selected].data.x++;
+            return newObj;
+          });
+          break;
+        default:
+          break;
+      }
+
+      handleMovingFalse();
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: false });
+
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selected, setCObjects, setObjectMoving]);
 
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
     if (!ctrlKey) return;
@@ -194,6 +678,7 @@ const Canvas = () => {
             weight: '400',
             x: mousePosRelativeToTemplate.x,
             y: mousePosRelativeToTemplate.y - (32 * 1.2) / 2,
+            isSnapped: false,
           },
         },
       });
@@ -201,7 +686,10 @@ const Canvas = () => {
   };
 
   const handleDeselect = () => {
-    if (!spaceKey) setSelected('');
+    if (!spaceKey) {
+      setSelected('');
+      setSnapRulers([]);
+    }
   };
 
   if (!initialized)
@@ -285,6 +773,19 @@ const Canvas = () => {
 
             return null;
           })}
+
+          {/* Snap Ruler Component */}
+          {snapRulers?.map(({ x, y, width, height }, i) => (
+            <Box
+              key={`rulers-${i}`}
+              position="absolute"
+              top={y}
+              left={x}
+              width={width}
+              height={height}
+              background="purple.600"
+            />
+          ))}
 
           {/* Background Layer Click Outside */}
           <Box
