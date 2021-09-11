@@ -10,6 +10,7 @@
     "@chakra-ui/react": "^1.6.5",
     "@emotion/react": "^11",
     "@emotion/styled": "^11",
+    "@supabase/supabase-js": "^1.22.5",
     "base64-arraybuffer": "^1.0.1",
     "clsx": "^1.1.1",
     "framer-motion": "^4",
