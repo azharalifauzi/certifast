@@ -29,12 +29,33 @@ import {
 } from 'gstates';
 import { useEffect } from 'react';
 import { useAtomValue } from 'jotai/utils';
+import { useUndo } from 'hooks';
 
 const Toolbar = () => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
   const certTemplate = useAtomValue(certifTemplate);
   const preventToolbar = useAtomValue(preventToolbarAtom);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { undo, redo } = useUndo();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'y':
+          if (e.ctrlKey || e.metaKey) redo();
+          break;
+        case 'z':
+          if (e.ctrlKey || e.metaKey) undo();
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: false });
+
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [preventToolbar, setActiveToolbar, undo, redo]);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {

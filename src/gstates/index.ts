@@ -27,7 +27,7 @@ export type CanvasTextMeta = {
   isSnapped: boolean;
 };
 
-type CanvasObject = {
+export type CanvasObject = {
   type: 'text' | 'static-text';
   data: CanvasTextMeta;
 };

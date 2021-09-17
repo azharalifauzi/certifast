@@ -16,6 +16,8 @@ import { useMount, useMeasure } from 'react-use';
 import WebFont from 'webfontloader';
 import { zoomCanvas } from '.';
 import { GiCrosshair } from 'react-icons/gi';
+import { useUndo } from 'hooks';
+import cloneDeep from 'clone-deep';
 
 interface CanvasTextProps {
   id: string;
@@ -38,8 +40,12 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isEdit, setEdit] = useState<boolean>(false);
   const [editCache, setEditCache] = useState({ initHeight: 0, initWidth: 0, initText: '' });
+  const [moveCache, setMoveCache] = useState({ initX: 0, initY: 0, cObjects: {} });
+  const [resizeCache, setResizeCache] = useState({ initSize: 0, cObjects: {} });
 
   const { data: textData } = useMemo(() => cObjects[id], [id, cObjects]);
+
+  const { pushToUndoStack } = useUndo();
 
   useOutsideClick({
     ref: inputRef,
@@ -93,6 +99,9 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       setResize(false);
       setTextMoving(false);
       if (activeToolbar === 'resize') setActiveToolbar('move');
+      if ((moveCache.initX !== textData.x || moveCache.initY !== textData.y) && triggerMove)
+        pushToUndoStack(moveCache.cObjects);
+      if (resizeCache.initSize !== textData.size && resize) pushToUndoStack(resizeCache.cObjects);
     };
     const handleMouseMove = (e: MouseEvent) => {
       const { clientX, clientY, movementX } = e;
@@ -116,7 +125,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       }
     };
 
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mouseup', handleMouseUp, { capture: false });
     window.addEventListener('mousemove', handleMouseMove);
 
     return () => {
@@ -135,6 +144,9 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     setActiveToolbar,
     isWilLSnap,
     setTextMoving,
+    moveCache,
+    pushToUndoStack,
+    textData,
   ]);
 
   useEffect(() => {
@@ -142,7 +154,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       if ((e.key === 'Delete' || e.key === 'Backspace') && selected === id) {
         setCObjects((cObjects) => {
           const { [id]: _, ...newCObjects } = cObjects;
-
+          pushToUndoStack(cObjects);
           return newCObjects;
         });
         setSelected('');
@@ -156,7 +168,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     window.addEventListener('keydown', handleDelete, { capture: false });
 
     return () => window.removeEventListener('keydown', handleDelete);
-  }, [id, selected, setCObjects, setSelected, setDynamicInputText]);
+  }, [id, selected, setCObjects, setSelected, setDynamicInputText, pushToUndoStack]);
 
   const handleChangeText: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     setCObjects((obj) => {
@@ -240,6 +252,8 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
             x: e.clientX - textData.x,
             y: e.clientY - textData.y,
           });
+          setMoveCache({ cObjects: cloneDeep(cObjects), initX: textData.x, initY: textData.y });
+          setResizeCache({ cObjects: cloneDeep(cObjects), initSize: textData.size });
           if (resize) {
             setActiveToolbar('resize');
           } else {

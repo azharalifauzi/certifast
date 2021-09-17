@@ -37,6 +37,7 @@ import hexRgb from 'hex-rgb';
 import { useAtomValue } from 'jotai/utils';
 import Loading from 'components/loading';
 import * as gtag from 'libs/gtag';
+import { supabase } from 'libs/supabase';
 
 const Sidebar = () => {
   const [certifTemplate, setCertifTemplate] = useAtom(certifTemplateAtom);
@@ -189,10 +190,26 @@ const Sidebar = () => {
         URL.revokeObjectURL(url);
         setIsProgressModalOpen(false);
         setProgressState('end');
+        const fileSize = (blob.size / 1024 ** 2).toFixed(2); // send data in megabytes unit
         gtag.customDimension(['certificates_count', 'download_size'], 'generate_certificate', {
           certificates_count: certificateInput.length,
-          download_size: (blob.size / 1024 ** 2).toFixed(2), // send data in megabytes unit
+          download_size: fileSize,
         });
+        // send analytics to supabase only in prod
+        if (import.meta.env.PROD)
+          supabase
+            .from('analytics')
+            .insert([
+              {
+                certificate_count: certificateInput.length,
+                certificate_file_size: parseFloat(fileSize),
+              },
+            ])
+            .then((res) =>
+              console.log(
+                res.status.toString().startsWith('2') ? 'Send Analytics' : 'Analytics failed'
+              )
+            );
       }
 
       if (msg.type === 'progress') {
