@@ -195,20 +195,21 @@ const Sidebar = () => {
           certificates_count: certificateInput.length,
           download_size: fileSize,
         });
-        // send analytics to supabase
-        supabase
-          .from('analytics')
-          .insert([
-            {
-              certificate_count: certificateInput.length,
-              certificate_file_size: parseFloat(fileSize),
-            },
-          ])
-          .then((res) =>
-            console.log(
-              res.status.toString().startsWith('2') ? 'Send Analytics' : 'Analytics failed'
-            )
-          );
+        // send analytics to supabase only in prod
+        if (import.meta.env.PROD)
+          supabase
+            .from('analytics')
+            .insert([
+              {
+                certificate_count: certificateInput.length,
+                certificate_file_size: parseFloat(fileSize),
+              },
+            ])
+            .then((res) =>
+              console.log(
+                res.status.toString().startsWith('2') ? 'Send Analytics' : 'Analytics failed'
+              )
+            );
       }
 
       if (msg.type === 'progress') {

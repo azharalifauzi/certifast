@@ -20,6 +20,7 @@ import {
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage } from 'jotai/utils';
 import { debounce } from 'helpers';
+import { useUndo } from 'hooks';
 
 const CANVAS_HEIGHT = 10_000;
 const CANVAS_WIDTH = 10_000;
@@ -54,6 +55,8 @@ const Canvas = () => {
   const [snapRulers, setSnapRulers] = useState<Ruler[]>([]);
   const [windowRef, { width: windowW, height: windowH }] = useMeasure<HTMLDivElement>();
   const [canvasRef, { width: canvasW, height: canvasH }] = useMeasure<HTMLDivElement>();
+
+  const { pushToUndoStack } = useUndo();
 
   useMount(() => {
     setTimeout(
@@ -663,7 +666,7 @@ const Canvas = () => {
       Object.values(cObjects).forEach(({ type }) => {
         if (type === 'text') count++;
       });
-
+      pushToUndoStack(cObjects);
       setCObjects({
         ...cObjects,
         [newId]: {
