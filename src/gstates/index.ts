@@ -45,6 +45,7 @@ export const shiftKey = atom<boolean>(false);
 export const isOutsideCanvas = atom<boolean>(false);
 
 export const selectedObject = atom<string>('');
+export const multiSelected = atom<string[]>([]);
 
 export const dynamicTextInput = atomWithStorage<Record<string, string[]>>('dynamicTextInput', {});
 export const preventToolbar = atom<boolean>(false);

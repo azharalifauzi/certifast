@@ -20,7 +20,7 @@ import {
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage } from 'jotai/utils';
 import { debounce } from 'helpers';
-import { useUndo } from 'hooks';
+import { useSelectionBox, useUndo } from 'hooks';
 
 const CANVAS_HEIGHT = 10_000;
 const CANVAS_WIDTH = 10_000;
@@ -57,6 +57,7 @@ const Canvas = () => {
   const [canvasRef, { width: canvasW, height: canvasH }] = useMeasure<HTMLDivElement>();
 
   const { pushToUndoStack } = useUndo();
+  const { selectionBox, isSelecting } = useSelectionBox();
 
   useMount(() => {
     setTimeout(
@@ -690,7 +691,7 @@ const Canvas = () => {
 
   const handleDeselect = () => {
     if (!spaceKey) {
-      setSelected('');
+      // setSelected('');
       setSnapRulers([]);
     }
   };
@@ -789,6 +790,23 @@ const Canvas = () => {
               background="purple.600"
             />
           ))}
+
+          {/* Selection Box */}
+          {isSelecting && !spaceKey ? (
+            <Box
+              style={{
+                height: selectionBox.height,
+                width: selectionBox.width,
+                top: selectionBox.y,
+                left: selectionBox.x,
+              }}
+              position="absolute"
+              background="blue.400"
+              border="2px solid"
+              borderColor="blue.600"
+              opacity={0.4}
+            />
+          ) : null}
 
           {/* Background Layer Click Outside */}
           <Box
