@@ -52,5 +52,5 @@ export const preventToolbar = atom<boolean>(false);
 export const willSnap = atom<boolean>(false);
 export const isObjectMoving = atom<boolean>(false);
 
-type Event = 'resize' | 'move' | 'pan' | 'select' | 'multiselect' | 'idle' | 'zoom';
+type Event = 'resize' | 'move' | 'pan' | 'select' | 'multiselect' | 'idle' | 'zoom' | 'textedit';
 export const activeEvent = atom<Event>('idle');

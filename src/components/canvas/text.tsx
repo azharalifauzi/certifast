@@ -9,6 +9,7 @@ import {
   isObjectMoving,
   activeEvent,
   multiSelected,
+  shiftKey as shiftKeyAtom,
 } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
@@ -35,9 +36,10 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [selected, setSelected] = useAtom(selectedObject);
   const [, setTextMoving] = useAtom(isObjectMoving);
   const [, setEvent] = useAtom(activeEvent);
-  const [multiSelectedObj] = useAtom(multiSelected);
+  const [multiSelectedObj, setMultiSelectedObj] = useAtom(multiSelected);
   const [, setMultiSelectMetaData] = useAtom(multiSelectMetaDataAtom);
   const spaceKey = useAtomValue(spaceKeyAtom);
+  const shiftKey = useAtomValue(shiftKeyAtom);
   const isWilLSnap = useAtomValue(willSnap);
   const setDynamicInputText = useUpdateAtom(dynamicTextInput);
   const [prevZoom, setPrevZoom] = useState(zoom);
@@ -64,6 +66,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           return newObj;
         });
       setEdit(false);
+      setEvent('idle');
     },
   });
 
@@ -233,6 +236,29 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     if (spaceKey) return;
+
+    if (shiftKey) {
+      if (multiSelectedObj.length >= 2 && !multiSelectedObj.includes(id)) {
+        setMultiSelectedObj([...multiSelectedObj, id]);
+      } else if (selected && selected !== id) {
+        setMultiSelectedObj([selected, id]);
+        setSelected('');
+      } else if (multiSelectedObj.includes(id)) {
+        const newMultiSelected = [...multiSelectedObj];
+        const indexOf = multiSelectedObj.indexOf(id);
+        newMultiSelected.splice(indexOf, 1);
+
+        if (newMultiSelected.length === 1) {
+          setMultiSelectedObj([]);
+          setSelected(newMultiSelected[0]);
+        } else setMultiSelectedObj(newMultiSelected);
+      } else {
+        setSelected(id);
+      }
+
+      return;
+    }
+
     if (isMultiSelected) {
       setMultiSelectMetaData({
         initMove: true,
@@ -255,6 +281,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       });
       return;
     }
+
     if (activeToolbar === 'move') setSelected(id);
     setMousePos({
       x: e.clientX - textData.x,
@@ -333,6 +360,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
             initText: textData.text,
           });
           setEdit(true);
+          setEvent('textedit');
           setTimeout(() => {
             inputRef.current?.focus();
             inputRef.current?.setSelectionRange(0, textData.text.length - 1);

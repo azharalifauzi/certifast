@@ -98,7 +98,7 @@ const Canvas = () => {
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Control' || !e.metaKey) setCtrlKey(false);
       if (e.key === ' ') setSpaceKey(false);
-      if (e.shiftKey) setShiftKey(false);
+      if (!e.shiftKey) setShiftKey(false);
     };
 
     window.addEventListener('mouseup', handleMouseUp);
