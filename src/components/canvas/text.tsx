@@ -8,6 +8,7 @@ import {
   willSnap,
   isObjectMoving,
   activeEvent,
+  multiSelected,
 } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
@@ -19,6 +20,7 @@ import { zoomCanvas } from '.';
 import { GiCrosshair } from 'react-icons/gi';
 import { useUndo } from 'hooks';
 import cloneDeep from 'clone-deep';
+import { multiSelectMetaDataAtom } from './MultiSelectBox';
 
 interface CanvasTextProps {
   id: string;
@@ -31,8 +33,10 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
   const [selected, setSelected] = useAtom(selectedObject);
-  const [isTextMoving, setTextMoving] = useAtom(isObjectMoving);
-  const [event, setEvent] = useAtom(activeEvent);
+  const [, setTextMoving] = useAtom(isObjectMoving);
+  const [, setEvent] = useAtom(activeEvent);
+  const [multiSelectedObj] = useAtom(multiSelected);
+  const [, setMultiSelectMetaData] = useAtom(multiSelectMetaDataAtom);
   const spaceKey = useAtomValue(spaceKeyAtom);
   const isWilLSnap = useAtomValue(willSnap);
   const setDynamicInputText = useUpdateAtom(dynamicTextInput);
@@ -46,6 +50,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [resizeCache, setResizeCache] = useState({ initSize: 0, cObjects: {} });
 
   const { data: textData } = useMemo(() => cObjects[id], [id, cObjects]);
+  const isMultiSelected = useMemo(() => multiSelectedObj.includes(id), [id, multiSelectedObj]);
 
   const { pushToUndoStack } = useUndo();
 
@@ -197,6 +202,74 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     return ch;
   }, [textData.text]);
 
+  const multiSelectionBoxMeta = useMemo(() => {
+    if (multiSelectedObj.length === 0 || Object.keys(cObjects).length < 2)
+      return { x: 0, y: 0, width: 0, height: 0 };
+
+    let x = cObjects[multiSelectedObj[0]].data.x / zoom;
+    let y = cObjects[multiSelectedObj[0]].data.y / zoom;
+    let maxX = cObjects[multiSelectedObj[0]].data.x / zoom;
+    let maxY = cObjects[multiSelectedObj[0]].data.y / zoom;
+
+    multiSelectedObj.forEach((id) => {
+      const objData = cObjects[id].data;
+      const _x = objData.x / zoom;
+      const _y = objData.y / zoom;
+      const _height = objData.height ?? 0 / zoom;
+      const _width = objData.width ?? 0 / zoom;
+
+      x = Math.min(_x, x);
+      y = Math.min(_y, y);
+      maxX = Math.max(_x + _width, maxX);
+      maxY = Math.max(_y + _height, maxY);
+    });
+
+    const width = (maxX - x) * zoom;
+    const height = (maxY - y) * zoom;
+
+    return { x, y, height, width };
+  }, [multiSelectedObj, cObjects, zoom]);
+
+  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (spaceKey) return;
+    if (isMultiSelected) {
+      setMultiSelectMetaData({
+        initMove: true,
+        initMoveMousePos: {
+          x: e.clientX - multiSelectionBoxMeta.x * zoom,
+          y: e.clientY - multiSelectionBoxMeta.y * zoom,
+        },
+        isFromOutside: true,
+        isMovedAfterInit: false,
+        initPos: {
+          x: multiSelectionBoxMeta.x,
+          y: multiSelectionBoxMeta.y,
+        },
+        outsideMeta: {
+          selectedId: id,
+        },
+        cache: {
+          cObjects: cloneDeep(cObjects),
+        },
+      });
+      return;
+    }
+    if (activeToolbar === 'move') setSelected(id);
+    setMousePos({
+      x: e.clientX - textData.x,
+      y: e.clientY - textData.y,
+    });
+    setMoveCache({ cObjects: cloneDeep(cObjects), initX: textData.x, initY: textData.y });
+    setResizeCache({ cObjects: cloneDeep(cObjects), initSize: textData.size });
+    if (resize) {
+      setActiveToolbar('resize');
+    } else {
+      setTriggerMove(true);
+      setActiveToolbar('move');
+    }
+  };
+
   return (
     <>
       {isEdit ? (
@@ -249,26 +322,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
         lineHeight="1.0"
         borderColor={selected === id ? 'blue.400' : 'transparent'}
         fontSize={textData.size * zoom}
-        onClick={() => {
-          if (spaceKey) return;
-          if (activeToolbar === 'move') setSelected(id);
-        }}
-        onMouseDown={(e) => {
-          if (spaceKey) return;
-          if (activeToolbar === 'move') setSelected(id);
-          setMousePos({
-            x: e.clientX - textData.x,
-            y: e.clientY - textData.y,
-          });
-          setMoveCache({ cObjects: cloneDeep(cObjects), initX: textData.x, initY: textData.y });
-          setResizeCache({ cObjects: cloneDeep(cObjects), initSize: textData.size });
-          if (resize) {
-            setActiveToolbar('resize');
-          } else {
-            setTriggerMove(true);
-            setActiveToolbar('move');
-          }
-        }}
+        onMouseDown={onMouseDown}
         onMouseMove={() => {
           if (activeToolbar === 'move' && resize) setResize(false);
         }}

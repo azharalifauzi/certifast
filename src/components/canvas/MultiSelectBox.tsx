@@ -1,18 +1,67 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Box } from '@chakra-ui/react';
-import { useAtom } from 'jotai';
-import { activeEvent, canvasObjects, dynamicTextInput, multiSelected, spaceKey } from 'gstates';
+import { atom, useAtom } from 'jotai';
+import {
+  activeEvent,
+  canvasObjects,
+  dynamicTextInput,
+  multiSelected,
+  selectedObject,
+  spaceKey,
+} from 'gstates';
 import { zoomCanvas } from '.';
 import { useUndo } from 'hooks';
 import cloneDeep from 'clone-deep';
 
+type MultiSelectMetaData = {
+  initMove: boolean;
+  initMoveMousePos: {
+    x: number;
+    y: number;
+  };
+  isMovedAfterInit: boolean;
+  isFromOutside: boolean;
+  initPos: {
+    x: number;
+    y: number;
+  };
+  outsideMeta: {
+    selectedId: string;
+  };
+  cache: {
+    cObjects: any;
+  };
+};
+
+export const multiSelectMetaDataAtom = atom<MultiSelectMetaData>({
+  initMove: false,
+  initMoveMousePos: {
+    x: 0,
+    y: 0,
+  },
+  isMovedAfterInit: false,
+  isFromOutside: false,
+  initPos: {
+    x: 0,
+    y: 0,
+  },
+  outsideMeta: {
+    selectedId: '',
+  },
+  cache: {
+    cObjects: {},
+  },
+});
+
 const MultiSelectBox = () => {
   const [selected, setSelected] = useAtom(multiSelected);
+  const [, setSingleSelected] = useAtom(selectedObject);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [, setDynamicInputText] = useAtom(dynamicTextInput);
   const [zoom] = useAtom(zoomCanvas);
-  const [event, setEvent] = useAtom(activeEvent);
+  const [, setEvent] = useAtom(activeEvent);
   const [space] = useAtom(spaceKey);
+  const [multiSelectMetaData, setMultiSelectMetaData] = useAtom(multiSelectMetaDataAtom);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [moveCache, setMoveCache] = useState({ initX: 0, initY: 0, cObjects: {} });
   const [triggerMove, setTriggerMove] = useState(false);
@@ -54,10 +103,58 @@ const MultiSelectBox = () => {
       if ((moveCache.initX !== x || moveCache.initY !== y) && triggerMove) {
         pushToUndoStack(moveCache.cObjects);
       }
+      setMultiSelectMetaData((meta) => {
+        const isMovedAfterInit = meta.initPos.x !== x || meta.initPos.y !== y;
+
+        if (!isMovedAfterInit && meta.initMove) {
+          setSingleSelected(meta.outsideMeta.selectedId);
+          setSelected([]);
+        }
+
+        if (isMovedAfterInit && meta.initMove) {
+          pushToUndoStack(meta.cache.cObjects);
+        }
+
+        return {
+          isMovedAfterInit,
+          initMove: false,
+          initMoveMousePos: {
+            x: 0,
+            y: 0,
+          },
+          isFromOutside: false,
+          initPos: {
+            x: 0,
+            y: 0,
+          },
+          outsideMeta: {
+            selectedId: '',
+          },
+          cache: {
+            cObjects: {},
+          },
+        };
+      });
     };
 
     const handleMouseMove = (e: MouseEvent) => {
       const { clientX, clientY } = e;
+
+      if (multiSelectMetaData.initMove && multiSelectMetaData.isFromOutside) {
+        const newX = clientX - multiSelectMetaData.initMoveMousePos.x - x * zoom;
+        const newY = clientY - multiSelectMetaData.initMoveMousePos.y - y * zoom;
+        setCObjects((obj) => {
+          const newObj = cloneDeep(obj);
+          selected.forEach((id) => {
+            newObj[id].data.x += newX;
+            newObj[id].data.y += newY;
+          });
+
+          return newObj;
+        });
+
+        return;
+      }
 
       if (triggerMove && !space) {
         const newX = clientX - mousePos.x - x * zoom;
@@ -93,6 +190,10 @@ const MultiSelectBox = () => {
     moveCache,
     pushToUndoStack,
     triggerMove,
+    multiSelectMetaData,
+    setMultiSelectMetaData,
+    setSingleSelected,
+    setSelected,
   ]);
 
   useEffect(() => {
@@ -137,7 +238,6 @@ const MultiSelectBox = () => {
         position="absolute"
         onMouseDown={(e) => {
           e.stopPropagation();
-          console.log('triggered');
           setEvent('move');
           setTriggerMove(true);
           setMousePos({
