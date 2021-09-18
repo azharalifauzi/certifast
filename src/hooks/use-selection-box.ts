@@ -1,9 +1,11 @@
 import { zoomCanvas } from 'components/canvas';
 import {
+  activeEvent,
   canvasObjects,
   mousePosRelativeToTemplate,
   multiSelected as multiSelectedAtom,
   selectedObject as selectedObjectAtom,
+  spaceKey,
 } from 'gstates';
 import { useAtom } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
@@ -16,6 +18,8 @@ export const useSelectionBox = () => {
   const [selectedObject, setSelectedObject] = useAtom(selectedObjectAtom);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [zoom] = useAtom(zoomCanvas);
+  const [event, setEvent] = useAtom(activeEvent);
+  const [space] = useAtom(spaceKey);
   const [initPos, setInitPos] = useState({ x: 0, y: 0 });
   const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
   const [isSelecting, setSelecting] = useState<boolean>(false);
@@ -61,47 +65,72 @@ export const useSelectionBox = () => {
 
         if (_xw >= x && _y <= yh && y <= _yh && xw >= _x) {
           selected.push(id);
+        } else {
+          const indexOf = selected.indexOf(id);
+
+          selected.splice(indexOf, 0);
         }
       });
 
-      if (selected.length > 1) setMultiSelected(selected);
-      else if (selected.length === 1) setSelectedObject(selected[0]);
-      else {
-        // setMultiSelected([]);
-        // setSelectedObject('');
+      if (selected.length > 1) {
+        setMultiSelected(selected);
+        setSelectedObject('');
+      } else if (selected.length === 1) {
+        setSelectedObject(selected[0]);
+        setMultiSelected([]);
+      } else {
+        if (event !== 'resize' && !space && event !== 'move') {
+          setMultiSelected([]);
+          setSelectedObject('');
+        }
       }
     }
-  }, [isSelecting, cObjects, selectionBox, setMultiSelected, setSelectedObject, zoom]);
+  }, [
+    isSelecting,
+    cObjects,
+    selectionBox,
+    setMultiSelected,
+    setSelectedObject,
+    zoom,
+    event,
+    space,
+  ]);
 
   useEffect(() => {
     const handleMouseDown = () => {
-      setInitPos({ x: mousePos.x, y: mousePos.y });
-      setCurrentPos({ x: mousePos.x, y: mousePos.y });
-      setSelecting(true);
+      if (event === 'idle') {
+        const coord = { x: mousePos.x, y: mousePos.y };
+
+        setInitPos(coord);
+        setCurrentPos(coord);
+        setSelecting(true);
+        setEvent('multiselect');
+      }
     };
 
     window.addEventListener('mousedown', handleMouseDown, { capture: false });
 
     return () => window.removeEventListener('mousedown', handleMouseDown);
-  }, [mousePos]);
+  }, [mousePos, setEvent, event]);
 
   useEffect(() => {
-    if (isSelecting) {
+    if (event === 'multiselect') {
       setCurrentPos({ x: mousePos.x, y: mousePos.y });
     }
-  }, [mousePos, isSelecting]);
+  }, [mousePos, event]);
 
   useEffect(() => {
     const handleMouseUp = () => {
       setSelecting(false);
       setInitPos({ x: 0, y: 0 });
       setCurrentPos({ x: 0, y: 0 });
+      setEvent('idle');
     };
 
     window.addEventListener('mouseup', handleMouseUp, { capture: false });
 
     return () => window.removeEventListener('mouseup', handleMouseUp);
-  }, []);
+  }, [setEvent]);
 
   return { isSelecting, initPos, currentPos, selectionBox };
 };

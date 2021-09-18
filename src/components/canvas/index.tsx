@@ -16,11 +16,14 @@ import {
   isOutsideCanvas as isMouseOutsideCanvasAtom,
   willSnap,
   isObjectMoving as isObjectMovingAtom,
+  activeEvent,
+  multiSelected,
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage } from 'jotai/utils';
 import { debounce } from 'helpers';
 import { useSelectionBox, useUndo } from 'hooks';
+import MultiSelectBox from './MultiSelectBox';
 
 const CANVAS_HEIGHT = 10_000;
 const CANVAS_WIDTH = 10_000;
@@ -49,6 +52,8 @@ const Canvas = () => {
   const [isMouseOutsideCanvas, setIsMouseOutsideCanvas] = useAtom(isMouseOutsideCanvasAtom);
   const [_, setWillSnap] = useAtom(willSnap);
   const [isObjectMoving, setObjectMoving] = useAtom(isObjectMovingAtom);
+  const [event, setEvent] = useAtom(activeEvent);
+  const [multiSelectedObj] = useAtom(multiSelected);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
@@ -81,7 +86,10 @@ const Canvas = () => {
   }, [triggerPan, spaceKey, activeToolbar, isMouseOutsideCanvas]);
 
   useEffect(() => {
-    const handleMouseUp = () => setTriggerPan(false);
+    const handleMouseUp = () => {
+      setTriggerPan(false);
+      setEvent('idle');
+    };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Control' || e.metaKey) setCtrlKey(true);
       if (e.key === ' ') setSpaceKey(true);
@@ -102,7 +110,7 @@ const Canvas = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [setCtrlKey, setSpaceKey, setShiftKey]);
+  }, [setCtrlKey, setSpaceKey, setShiftKey, setEvent]);
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -719,7 +727,6 @@ const Canvas = () => {
       ref={windowRef}
       onMouseMove={(e) => {
         const { movementX, movementY } = e;
-
         if (triggerPan && spaceKey) {
           if (left + movementX <= 0 && left + movementX >= -(canvasW - windowW))
             setLeft((l) => l + movementX);
@@ -729,6 +736,7 @@ const Canvas = () => {
       }}
       onMouseDown={() => {
         setTriggerPan(true);
+        if (spaceKey) setEvent('pan');
       }}
     >
       {/* Canvas Component */}
@@ -792,7 +800,7 @@ const Canvas = () => {
           ))}
 
           {/* Selection Box */}
-          {isSelecting && !spaceKey ? (
+          {isSelecting && !spaceKey && event === 'multiselect' ? (
             <Box
               style={{
                 height: selectionBox.height,
@@ -807,6 +815,9 @@ const Canvas = () => {
               opacity={0.4}
             />
           ) : null}
+
+          {/* Multi Select Box */}
+          {multiSelectedObj.length > 0 ? <MultiSelectBox /> : null}
 
           {/* Background Layer Click Outside */}
           <Box

@@ -7,6 +7,7 @@ import {
   dynamicTextInput,
   willSnap,
   isObjectMoving,
+  activeEvent,
 } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
@@ -31,6 +32,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
   const [selected, setSelected] = useAtom(selectedObject);
   const [isTextMoving, setTextMoving] = useAtom(isObjectMoving);
+  const [event, setEvent] = useAtom(activeEvent);
   const spaceKey = useAtomValue(spaceKeyAtom);
   const isWilLSnap = useAtomValue(willSnap);
   const setDynamicInputText = useUpdateAtom(dynamicTextInput);
@@ -98,16 +100,19 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       setTriggerMove(false);
       setResize(false);
       setTextMoving(false);
+      setEvent('idle');
       if (activeToolbar === 'resize') setActiveToolbar('move');
       if ((moveCache.initX !== textData.x || moveCache.initY !== textData.y) && triggerMove)
         pushToUndoStack(moveCache.cObjects);
       if (resizeCache.initSize !== textData.size && resize) pushToUndoStack(resizeCache.cObjects);
     };
+
     const handleMouseMove = (e: MouseEvent) => {
       const { clientX, clientY, movementX } = e;
       if (spaceKey) return;
       if (triggerMove && activeToolbar === 'move' && !isWilLSnap) {
         setTextMoving(true);
+        setEvent('move');
         setCObjects((obj) => {
           const newCObjects = { ...obj };
           newCObjects[id].data.x = clientX - mousePos.x;
@@ -116,6 +121,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           return newCObjects;
         });
       } else if (resize && activeToolbar === 'resize') {
+        setEvent('resize');
         setCObjects((obj) => {
           const newCObjects = { ...obj };
           const newSize = newCObjects[id].data.size + (movementX * 0.4) / zoom;
@@ -147,6 +153,8 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     moveCache,
     pushToUndoStack,
     textData,
+    resizeCache,
+    setEvent,
   ]);
 
   useEffect(() => {
@@ -296,9 +304,11 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
             }}
             onMouseOver={() => {
               setResize(true);
+              setEvent('resize');
             }}
             onMouseLeave={() => {
               if (activeToolbar === 'move') setResize(false);
+              setEvent('idle');
             }}
             onMouseMove={(e) => e.stopPropagation()}
           />
