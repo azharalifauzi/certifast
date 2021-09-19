@@ -8,6 +8,7 @@ import {
   selectedObject as selectedObjectAtom,
   spaceKey,
   isInsideCanvas as isInsideCanvasAtom,
+  shiftKey as shiftKeyAtom,
 } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue } from 'jotai/utils';
@@ -18,13 +19,14 @@ const isNegative = (num: number) => num < 0;
 export const useSelectionBox = () => {
   const [mousePos] = useAtom(mousePosRelativeToTemplate);
   const [, setMultiSelected] = useAtom(multiSelectedAtom);
-  const [, setSelectedObject] = useAtom(selectedObjectAtom);
-  const [cObjects, setCObjects] = useAtom(canvasObjects);
+  const [selectedObject, setSelectedObject] = useAtom(selectedObjectAtom);
+  const [cObjects] = useAtom(canvasObjects);
   const [zoom] = useAtom(zoomCanvas);
   const [event, setEvent] = useAtom(activeEvent);
   const [space] = useAtom(spaceKey);
   const isEditGlobal = useAtomValue(isEditAtom);
   const isInsideCanvas = useAtomValue(isInsideCanvasAtom);
+  const shiftKey = useAtomValue(shiftKeyAtom);
   const [initPos, setInitPos] = useState({ x: 0, y: 0 });
   const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
   const [isSelecting, setSelecting] = useState<boolean>(false);
@@ -77,14 +79,21 @@ export const useSelectionBox = () => {
         }
       });
 
-      if (selected.length > 1) {
+      if (shiftKey && selected.length > 0) {
+        setMultiSelected((current) => {
+          const newMultiSelected = [...current, ...selected];
+          if (selectedObject) newMultiSelected.push(selectedObject);
+          return newMultiSelected;
+        });
+        setSelectedObject('');
+      } else if (selected.length > 1) {
         setMultiSelected(selected);
         setSelectedObject('');
       } else if (selected.length === 1) {
         setSelectedObject(selected[0]);
         setMultiSelected([]);
       } else {
-        if (event !== 'resize' && !space && event !== 'move') {
+        if (event !== 'resize' && !space && event !== 'move' && !shiftKey) {
           setMultiSelected([]);
           setSelectedObject('');
         }
@@ -99,6 +108,8 @@ export const useSelectionBox = () => {
     zoom,
     event,
     space,
+    shiftKey,
+    selectedObject,
   ]);
 
   useEffect(() => {

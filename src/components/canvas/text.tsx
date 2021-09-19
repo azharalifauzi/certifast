@@ -287,6 +287,10 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       return;
     }
 
+    if (!multiSelectedObj.includes(id)) {
+      setMultiSelectedObj([]);
+    }
+
     if (activeToolbar === 'move') setSelected(id);
     setMousePos({
       x: e.clientX - textData.x,
