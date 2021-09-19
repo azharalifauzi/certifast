@@ -13,14 +13,17 @@ import {
   spaceKey as spaceKeyAtom,
   ctrlKey as ctrlKeyAtom,
   shiftKey as shiftKeyAtom,
-  isOutsideCanvas as isMouseOutsideCanvasAtom,
+  isInsideCanvas as isMouseInsideCanvasAtom,
   willSnap,
   isObjectMoving as isObjectMovingAtom,
+  activeEvent,
+  multiSelected,
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage } from 'jotai/utils';
 import { debounce } from 'helpers';
-import { useUndo } from 'hooks';
+import { useSelectionBox, useUndo } from 'hooks';
+import MultiSelectBox from './MultiSelectBox';
 
 const CANVAS_HEIGHT = 10_000;
 const CANVAS_WIDTH = 10_000;
@@ -46,9 +49,11 @@ const Canvas = () => {
   const [ctrlKey, setCtrlKey] = useAtom(ctrlKeyAtom);
   const [spaceKey, setSpaceKey] = useAtom(spaceKeyAtom);
   const [shiftKey, setShiftKey] = useAtom(shiftKeyAtom);
-  const [isMouseOutsideCanvas, setIsMouseOutsideCanvas] = useAtom(isMouseOutsideCanvasAtom);
+  const [isMouseInsideCanvas, setIsMouseInsideCanvas] = useAtom(isMouseInsideCanvasAtom);
   const [_, setWillSnap] = useAtom(willSnap);
   const [isObjectMoving, setObjectMoving] = useAtom(isObjectMovingAtom);
+  const [event, setEvent] = useAtom(activeEvent);
+  const [multiSelectedObj] = useAtom(multiSelected);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
@@ -57,6 +62,7 @@ const Canvas = () => {
   const [canvasRef, { width: canvasW, height: canvasH }] = useMeasure<HTMLDivElement>();
 
   const { pushToUndoStack } = useUndo();
+  const { selectionBox, isSelecting } = useSelectionBox();
 
   useMount(() => {
     setTimeout(
@@ -71,16 +77,19 @@ const Canvas = () => {
   });
 
   useEffect(() => {
-    if (!isMouseOutsideCanvas) document.body.style.cursor = 'default';
+    if (!isMouseInsideCanvas) document.body.style.cursor = 'default';
     else if (activeToolbar === 'resize') document.body.style.cursor = 'nw-resize';
     else if (spaceKey && !triggerPan) document.body.style.cursor = 'grab';
     else if (spaceKey && triggerPan) document.body.style.cursor = 'grabbing';
     else if (activeToolbar === 'text') document.body.style.cursor = 'text';
     else document.body.style.cursor = 'default';
-  }, [triggerPan, spaceKey, activeToolbar, isMouseOutsideCanvas]);
+  }, [triggerPan, spaceKey, activeToolbar, isMouseInsideCanvas]);
 
   useEffect(() => {
-    const handleMouseUp = () => setTriggerPan(false);
+    const handleMouseUp = () => {
+      setTriggerPan(false);
+      setEvent('idle');
+    };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Control' || e.metaKey) setCtrlKey(true);
       if (e.key === ' ') setSpaceKey(true);
@@ -89,7 +98,7 @@ const Canvas = () => {
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Control' || !e.metaKey) setCtrlKey(false);
       if (e.key === ' ') setSpaceKey(false);
-      if (e.shiftKey) setShiftKey(false);
+      if (!e.shiftKey) setShiftKey(false);
     };
 
     window.addEventListener('mouseup', handleMouseUp);
@@ -101,7 +110,7 @@ const Canvas = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [setCtrlKey, setSpaceKey, setShiftKey]);
+  }, [setCtrlKey, setSpaceKey, setShiftKey, setEvent]);
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -690,7 +699,7 @@ const Canvas = () => {
 
   const handleDeselect = () => {
     if (!spaceKey) {
-      setSelected('');
+      // setSelected('');
       setSnapRulers([]);
     }
   };
@@ -718,7 +727,6 @@ const Canvas = () => {
       ref={windowRef}
       onMouseMove={(e) => {
         const { movementX, movementY } = e;
-
         if (triggerPan && spaceKey) {
           if (left + movementX <= 0 && left + movementX >= -(canvasW - windowW))
             setLeft((l) => l + movementX);
@@ -728,6 +736,7 @@ const Canvas = () => {
       }}
       onMouseDown={() => {
         setTriggerPan(true);
+        if (spaceKey) setEvent('pan');
       }}
     >
       {/* Canvas Component */}
@@ -746,10 +755,10 @@ const Canvas = () => {
         onClick={handleAddObject}
         userSelect="none"
         onMouseOver={() => {
-          setIsMouseOutsideCanvas(true);
+          setIsMouseInsideCanvas(true);
         }}
         onMouseLeave={() => {
-          setIsMouseOutsideCanvas(false);
+          setIsMouseInsideCanvas(false);
         }}
       >
         <Box w="1%" h="1%" background="blue.200" position="absolute" top="20%" left="20%" />
@@ -789,6 +798,26 @@ const Canvas = () => {
               background="purple.600"
             />
           ))}
+
+          {/* Selection Box */}
+          {isSelecting && !spaceKey && event === 'multiselect' ? (
+            <Box
+              style={{
+                height: selectionBox.height,
+                width: selectionBox.width,
+                top: selectionBox.y,
+                left: selectionBox.x,
+              }}
+              position="absolute"
+              background="blue.400"
+              border="2px solid"
+              borderColor="blue.600"
+              opacity={0.4}
+            />
+          ) : null}
+
+          {/* Multi Select Box */}
+          {multiSelectedObj.length > 0 ? <MultiSelectBox /> : null}
 
           {/* Background Layer Click Outside */}
           <Box
