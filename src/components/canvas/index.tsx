@@ -13,7 +13,7 @@ import {
   spaceKey as spaceKeyAtom,
   ctrlKey as ctrlKeyAtom,
   shiftKey as shiftKeyAtom,
-  isOutsideCanvas as isMouseOutsideCanvasAtom,
+  isInsideCanvas as isMouseInsideCanvasAtom,
   willSnap,
   isObjectMoving as isObjectMovingAtom,
   activeEvent,
@@ -49,7 +49,7 @@ const Canvas = () => {
   const [ctrlKey, setCtrlKey] = useAtom(ctrlKeyAtom);
   const [spaceKey, setSpaceKey] = useAtom(spaceKeyAtom);
   const [shiftKey, setShiftKey] = useAtom(shiftKeyAtom);
-  const [isMouseOutsideCanvas, setIsMouseOutsideCanvas] = useAtom(isMouseOutsideCanvasAtom);
+  const [isMouseInsideCanvas, setIsMouseInsideCanvas] = useAtom(isMouseInsideCanvasAtom);
   const [_, setWillSnap] = useAtom(willSnap);
   const [isObjectMoving, setObjectMoving] = useAtom(isObjectMovingAtom);
   const [event, setEvent] = useAtom(activeEvent);
@@ -77,13 +77,13 @@ const Canvas = () => {
   });
 
   useEffect(() => {
-    if (!isMouseOutsideCanvas) document.body.style.cursor = 'default';
+    if (!isMouseInsideCanvas) document.body.style.cursor = 'default';
     else if (activeToolbar === 'resize') document.body.style.cursor = 'nw-resize';
     else if (spaceKey && !triggerPan) document.body.style.cursor = 'grab';
     else if (spaceKey && triggerPan) document.body.style.cursor = 'grabbing';
     else if (activeToolbar === 'text') document.body.style.cursor = 'text';
     else document.body.style.cursor = 'default';
-  }, [triggerPan, spaceKey, activeToolbar, isMouseOutsideCanvas]);
+  }, [triggerPan, spaceKey, activeToolbar, isMouseInsideCanvas]);
 
   useEffect(() => {
     const handleMouseUp = () => {
@@ -755,10 +755,10 @@ const Canvas = () => {
         onClick={handleAddObject}
         userSelect="none"
         onMouseOver={() => {
-          setIsMouseOutsideCanvas(true);
+          setIsMouseInsideCanvas(true);
         }}
         onMouseLeave={() => {
-          setIsMouseOutsideCanvas(false);
+          setIsMouseInsideCanvas(false);
         }}
       >
         <Box w="1%" h="1%" background="blue.200" position="absolute" top="20%" left="20%" />

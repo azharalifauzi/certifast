@@ -42,7 +42,7 @@ export const activeToolbar = atom<ActiveToolbar>('move');
 export const spaceKey = atom<boolean>(false);
 export const ctrlKey = atom<boolean>(false);
 export const shiftKey = atom<boolean>(false);
-export const isOutsideCanvas = atom<boolean>(false);
+export const isInsideCanvas = atom<boolean>(false);
 
 export const selectedObject = atom<string>('');
 export const multiSelected = atom<string[]>([]);

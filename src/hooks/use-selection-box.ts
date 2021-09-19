@@ -1,4 +1,5 @@
 import { zoomCanvas } from 'components/canvas';
+import { isEditAtom } from 'components/canvas/text';
 import {
   activeEvent,
   canvasObjects,
@@ -6,20 +7,24 @@ import {
   multiSelected as multiSelectedAtom,
   selectedObject as selectedObjectAtom,
   spaceKey,
+  isInsideCanvas as isInsideCanvasAtom,
 } from 'gstates';
 import { useAtom } from 'jotai';
+import { useAtomValue } from 'jotai/utils';
 import { useEffect, useMemo, useState } from 'react';
 
 const isNegative = (num: number) => num < 0;
 
 export const useSelectionBox = () => {
   const [mousePos] = useAtom(mousePosRelativeToTemplate);
-  const [multiSelected, setMultiSelected] = useAtom(multiSelectedAtom);
-  const [selectedObject, setSelectedObject] = useAtom(selectedObjectAtom);
+  const [, setMultiSelected] = useAtom(multiSelectedAtom);
+  const [, setSelectedObject] = useAtom(selectedObjectAtom);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [zoom] = useAtom(zoomCanvas);
   const [event, setEvent] = useAtom(activeEvent);
   const [space] = useAtom(spaceKey);
+  const isEditGlobal = useAtomValue(isEditAtom);
+  const isInsideCanvas = useAtomValue(isInsideCanvasAtom);
   const [initPos, setInitPos] = useState({ x: 0, y: 0 });
   const [currentPos, setCurrentPos] = useState({ x: 0, y: 0 });
   const [isSelecting, setSelecting] = useState<boolean>(false);
@@ -97,8 +102,8 @@ export const useSelectionBox = () => {
   ]);
 
   useEffect(() => {
-    const handleMouseDown = () => {
-      if (event === 'idle') {
+    const handleMouseDown = (e: MouseEvent) => {
+      if (event === 'idle' && !isEditGlobal.value && e.button === 0 && isInsideCanvas) {
         const coord = { x: mousePos.x, y: mousePos.y };
 
         setInitPos(coord);
@@ -111,7 +116,7 @@ export const useSelectionBox = () => {
     window.addEventListener('mousedown', handleMouseDown, { capture: false });
 
     return () => window.removeEventListener('mousedown', handleMouseDown);
-  }, [mousePos, setEvent, event]);
+  }, [mousePos, setEvent, event, isEditGlobal, isInsideCanvas]);
 
   useEffect(() => {
     if (event === 'multiselect') {

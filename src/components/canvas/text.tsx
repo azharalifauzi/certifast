@@ -1,4 +1,4 @@
-import { Box, useOutsideClick } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 import {
   canvasObjects,
   activeToolbar as activeToolbarAtom,
@@ -11,11 +11,11 @@ import {
   multiSelected,
   shiftKey as shiftKeyAtom,
 } from 'gstates';
-import { useAtom } from 'jotai';
+import { atom, useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
 import React, { useEffect, useState, memo, useRef } from 'react';
 import { useMemo } from 'react';
-import { useMount, useMeasure } from 'react-use';
+import { useMount, useMeasure, useClickAway } from 'react-use';
 import WebFont from 'webfontloader';
 import { zoomCanvas } from '.';
 import { GiCrosshair } from 'react-icons/gi';
@@ -26,6 +26,8 @@ import { multiSelectMetaDataAtom } from './MultiSelectBox';
 interface CanvasTextProps {
   id: string;
 }
+
+export const isEditAtom = atom({ selectedId: '', value: false });
 
 const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [textRef, { height, width }] = useMeasure<HTMLDivElement>();
@@ -42,6 +44,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const shiftKey = useAtomValue(shiftKeyAtom);
   const isWilLSnap = useAtomValue(willSnap);
   const setDynamicInputText = useUpdateAtom(dynamicTextInput);
+  const setEditGlobal = useUpdateAtom(isEditAtom);
   const [prevZoom, setPrevZoom] = useState(zoom);
   const [triggerMove, setTriggerMove] = useState<boolean>(false);
   const [resize, setResize] = useState<boolean>(false);
@@ -56,9 +59,9 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
 
   const { pushToUndoStack } = useUndo();
 
-  useOutsideClick({
-    ref: inputRef,
-    handler: () => {
+  useClickAway(
+    inputRef,
+    () => {
       if (!textData.text)
         setCObjects((obj) => {
           const newObj = { ...obj };
@@ -66,9 +69,11 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           return newObj;
         });
       setEdit(false);
+      setEditGlobal({ selectedId: '', value: false });
       setEvent('idle');
     },
-  });
+    ['click']
+  );
 
   useMount(() => {
     WebFont.load({
@@ -360,6 +365,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
             initText: textData.text,
           });
           setEdit(true);
+          setEditGlobal({ selectedId: id, value: true });
           setEvent('textedit');
           setTimeout(() => {
             inputRef.current?.focus();
