@@ -1,4 +1,4 @@
-import { Box, useOutsideClick } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 import {
   canvasObjects,
   activeToolbar as activeToolbarAtom,
@@ -7,19 +7,27 @@ import {
   dynamicTextInput,
   willSnap,
   isObjectMoving,
+  activeEvent,
+  multiSelected,
+  shiftKey as shiftKeyAtom,
 } from 'gstates';
-import { useAtom } from 'jotai';
+import { atom, useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
 import React, { useEffect, useState, memo, useRef } from 'react';
 import { useMemo } from 'react';
-import { useMount, useMeasure } from 'react-use';
+import { useMount, useMeasure, useClickAway } from 'react-use';
 import WebFont from 'webfontloader';
 import { zoomCanvas } from '.';
 import { GiCrosshair } from 'react-icons/gi';
+import { useUndo } from 'hooks';
+import cloneDeep from 'clone-deep';
+import { multiSelectMetaDataAtom } from './MultiSelectBox';
 
 interface CanvasTextProps {
   id: string;
 }
+
+export const isEditAtom = atom({ selectedId: '', value: false });
 
 const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [textRef, { height, width }] = useMeasure<HTMLDivElement>();
@@ -28,22 +36,32 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
   const [selected, setSelected] = useAtom(selectedObject);
-  const [isTextMoving, setTextMoving] = useAtom(isObjectMoving);
+  const [, setTextMoving] = useAtom(isObjectMoving);
+  const [, setEvent] = useAtom(activeEvent);
+  const [multiSelectedObj, setMultiSelectedObj] = useAtom(multiSelected);
+  const [, setMultiSelectMetaData] = useAtom(multiSelectMetaDataAtom);
   const spaceKey = useAtomValue(spaceKeyAtom);
+  const shiftKey = useAtomValue(shiftKeyAtom);
   const isWilLSnap = useAtomValue(willSnap);
   const setDynamicInputText = useUpdateAtom(dynamicTextInput);
+  const setEditGlobal = useUpdateAtom(isEditAtom);
   const [prevZoom, setPrevZoom] = useState(zoom);
   const [triggerMove, setTriggerMove] = useState<boolean>(false);
   const [resize, setResize] = useState<boolean>(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isEdit, setEdit] = useState<boolean>(false);
   const [editCache, setEditCache] = useState({ initHeight: 0, initWidth: 0, initText: '' });
+  const [moveCache, setMoveCache] = useState({ initX: 0, initY: 0, cObjects: {} });
+  const [resizeCache, setResizeCache] = useState({ initSize: 0, cObjects: {} });
 
   const { data: textData } = useMemo(() => cObjects[id], [id, cObjects]);
+  const isMultiSelected = useMemo(() => multiSelectedObj.includes(id), [id, multiSelectedObj]);
 
-  useOutsideClick({
-    ref: inputRef,
-    handler: () => {
+  const { pushToUndoStack } = useUndo();
+
+  useClickAway(
+    inputRef,
+    () => {
       if (!textData.text)
         setCObjects((obj) => {
           const newObj = { ...obj };
@@ -51,8 +69,11 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           return newObj;
         });
       setEdit(false);
+      setEditGlobal({ selectedId: '', value: false });
+      setEvent('idle');
     },
-  });
+    ['click']
+  );
 
   useMount(() => {
     WebFont.load({
@@ -92,13 +113,19 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       setTriggerMove(false);
       setResize(false);
       setTextMoving(false);
+      setEvent('idle');
       if (activeToolbar === 'resize') setActiveToolbar('move');
+      if ((moveCache.initX !== textData.x || moveCache.initY !== textData.y) && triggerMove)
+        pushToUndoStack(moveCache.cObjects);
+      if (resizeCache.initSize !== textData.size && resize) pushToUndoStack(resizeCache.cObjects);
     };
+
     const handleMouseMove = (e: MouseEvent) => {
       const { clientX, clientY, movementX } = e;
       if (spaceKey) return;
       if (triggerMove && activeToolbar === 'move' && !isWilLSnap) {
         setTextMoving(true);
+        setEvent('move');
         setCObjects((obj) => {
           const newCObjects = { ...obj };
           newCObjects[id].data.x = clientX - mousePos.x;
@@ -107,6 +134,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           return newCObjects;
         });
       } else if (resize && activeToolbar === 'resize') {
+        setEvent('resize');
         setCObjects((obj) => {
           const newCObjects = { ...obj };
           const newSize = newCObjects[id].data.size + (movementX * 0.4) / zoom;
@@ -116,7 +144,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       }
     };
 
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mouseup', handleMouseUp, { capture: false });
     window.addEventListener('mousemove', handleMouseMove);
 
     return () => {
@@ -135,6 +163,11 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     setActiveToolbar,
     isWilLSnap,
     setTextMoving,
+    moveCache,
+    pushToUndoStack,
+    textData,
+    resizeCache,
+    setEvent,
   ]);
 
   useEffect(() => {
@@ -142,7 +175,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       if ((e.key === 'Delete' || e.key === 'Backspace') && selected === id) {
         setCObjects((cObjects) => {
           const { [id]: _, ...newCObjects } = cObjects;
-
+          pushToUndoStack(cObjects);
           return newCObjects;
         });
         setSelected('');
@@ -156,7 +189,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     window.addEventListener('keydown', handleDelete, { capture: false });
 
     return () => window.removeEventListener('keydown', handleDelete);
-  }, [id, selected, setCObjects, setSelected, setDynamicInputText]);
+  }, [id, selected, setCObjects, setSelected, setDynamicInputText, pushToUndoStack]);
 
   const handleChangeText: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     setCObjects((obj) => {
@@ -176,6 +209,102 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     }
     return ch;
   }, [textData.text]);
+
+  const multiSelectionBoxMeta = useMemo(() => {
+    if (multiSelectedObj.length === 0 || Object.keys(cObjects).length < 2)
+      return { x: 0, y: 0, width: 0, height: 0 };
+
+    let x = cObjects[multiSelectedObj[0]].data.x / zoom;
+    let y = cObjects[multiSelectedObj[0]].data.y / zoom;
+    let maxX = cObjects[multiSelectedObj[0]].data.x / zoom;
+    let maxY = cObjects[multiSelectedObj[0]].data.y / zoom;
+
+    multiSelectedObj.forEach((id) => {
+      const objData = cObjects[id].data;
+      const _x = objData.x / zoom;
+      const _y = objData.y / zoom;
+      const _height = objData.height ?? 0 / zoom;
+      const _width = objData.width ?? 0 / zoom;
+
+      x = Math.min(_x, x);
+      y = Math.min(_y, y);
+      maxX = Math.max(_x + _width, maxX);
+      maxY = Math.max(_y + _height, maxY);
+    });
+
+    const width = (maxX - x) * zoom;
+    const height = (maxY - y) * zoom;
+
+    return { x, y, height, width };
+  }, [multiSelectedObj, cObjects, zoom]);
+
+  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (spaceKey) return;
+
+    if (shiftKey) {
+      if (multiSelectedObj.length >= 2 && !multiSelectedObj.includes(id)) {
+        setMultiSelectedObj([...multiSelectedObj, id]);
+      } else if (selected && selected !== id) {
+        setMultiSelectedObj([selected, id]);
+        setSelected('');
+      } else if (multiSelectedObj.includes(id)) {
+        const newMultiSelected = [...multiSelectedObj];
+        const indexOf = multiSelectedObj.indexOf(id);
+        newMultiSelected.splice(indexOf, 1);
+
+        if (newMultiSelected.length === 1) {
+          setMultiSelectedObj([]);
+          setSelected(newMultiSelected[0]);
+        } else setMultiSelectedObj(newMultiSelected);
+      } else {
+        setSelected(id);
+      }
+
+      return;
+    }
+
+    if (isMultiSelected) {
+      setMultiSelectMetaData({
+        initMove: true,
+        initMoveMousePos: {
+          x: e.clientX - multiSelectionBoxMeta.x * zoom,
+          y: e.clientY - multiSelectionBoxMeta.y * zoom,
+        },
+        isFromOutside: true,
+        isMovedAfterInit: false,
+        initPos: {
+          x: multiSelectionBoxMeta.x,
+          y: multiSelectionBoxMeta.y,
+        },
+        outsideMeta: {
+          selectedId: id,
+        },
+        cache: {
+          cObjects: cloneDeep(cObjects),
+        },
+      });
+      return;
+    }
+
+    if (!multiSelectedObj.includes(id)) {
+      setMultiSelectedObj([]);
+    }
+
+    if (activeToolbar === 'move') setSelected(id);
+    setMousePos({
+      x: e.clientX - textData.x,
+      y: e.clientY - textData.y,
+    });
+    setMoveCache({ cObjects: cloneDeep(cObjects), initX: textData.x, initY: textData.y });
+    setResizeCache({ cObjects: cloneDeep(cObjects), initSize: textData.size });
+    if (resize) {
+      setActiveToolbar('resize');
+    } else {
+      setTriggerMove(true);
+      setActiveToolbar('move');
+    }
+  };
 
   return (
     <>
@@ -229,24 +358,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
         lineHeight="1.0"
         borderColor={selected === id ? 'blue.400' : 'transparent'}
         fontSize={textData.size * zoom}
-        onClick={() => {
-          if (spaceKey) return;
-          if (activeToolbar === 'move') setSelected(id);
-        }}
-        onMouseDown={(e) => {
-          if (spaceKey) return;
-          if (activeToolbar === 'move') setSelected(id);
-          setMousePos({
-            x: e.clientX - textData.x,
-            y: e.clientY - textData.y,
-          });
-          if (resize) {
-            setActiveToolbar('resize');
-          } else {
-            setTriggerMove(true);
-            setActiveToolbar('move');
-          }
-        }}
+        onMouseDown={onMouseDown}
         onMouseMove={() => {
           if (activeToolbar === 'move' && resize) setResize(false);
         }}
@@ -257,6 +369,8 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
             initText: textData.text,
           });
           setEdit(true);
+          setEditGlobal({ selectedId: id, value: true });
+          setEvent('textedit');
           setTimeout(() => {
             inputRef.current?.focus();
             inputRef.current?.setSelectionRange(0, textData.text.length - 1);
@@ -282,9 +396,11 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
             }}
             onMouseOver={() => {
               setResize(true);
+              setEvent('resize');
             }}
             onMouseLeave={() => {
               if (activeToolbar === 'move') setResize(false);
+              setEvent('idle');
             }}
             onMouseMove={(e) => e.stopPropagation()}
           />

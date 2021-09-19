@@ -27,7 +27,7 @@ export type CanvasTextMeta = {
   isSnapped: boolean;
 };
 
-type CanvasObject = {
+export type CanvasObject = {
   type: 'text' | 'static-text';
   data: CanvasTextMeta;
 };
@@ -42,11 +42,15 @@ export const activeToolbar = atom<ActiveToolbar>('move');
 export const spaceKey = atom<boolean>(false);
 export const ctrlKey = atom<boolean>(false);
 export const shiftKey = atom<boolean>(false);
-export const isOutsideCanvas = atom<boolean>(false);
+export const isInsideCanvas = atom<boolean>(false);
 
 export const selectedObject = atom<string>('');
+export const multiSelected = atom<string[]>([]);
 
 export const dynamicTextInput = atomWithStorage<Record<string, string[]>>('dynamicTextInput', {});
 export const preventToolbar = atom<boolean>(false);
 export const willSnap = atom<boolean>(false);
 export const isObjectMoving = atom<boolean>(false);
+
+type Event = 'resize' | 'move' | 'pan' | 'select' | 'multiselect' | 'idle' | 'zoom' | 'textedit';
+export const activeEvent = atom<Event>('idle');
