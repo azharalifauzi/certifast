@@ -24,12 +24,13 @@ import { atomWithStorage } from 'jotai/utils';
 import { debounce } from 'helpers';
 import { useSelectionBox, useUndo } from 'hooks';
 import MultiSelectBox from './MultiSelectBox';
+import ScrollBar from './ScrollBar';
 
 const CANVAS_HEIGHT = 10_000;
 const CANVAS_WIDTH = 10_000;
 
-const topCanvas = atom(CANVAS_HEIGHT / 2);
-const leftCanvas = atom(CANVAS_WIDTH / 2);
+export const topCanvas = atom(CANVAS_HEIGHT / 2);
+export const leftCanvas = atom(CANVAS_WIDTH / 2);
 export const zoomCanvas = atomWithStorage('zoom', 1.0);
 
 const widthInCanvas = (w: number): string => `${(w / CANVAS_WIDTH) * 100}%`;
@@ -114,13 +115,13 @@ const Canvas = () => {
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (ctrlKey || e.metaKey) e.preventDefault();
+      if (isMouseInsideCanvas) e.preventDefault();
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => window.removeEventListener('wheel', handleWheel);
-  }, [ctrlKey]);
+  }, [isMouseInsideCanvas]);
 
   // mouse position listener relative to certif template
   useEffect(() => {
@@ -620,51 +621,60 @@ const Canvas = () => {
   }, [selected, setCObjects, setObjectMoving]);
 
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
-    if (!ctrlKey) return;
+    const { clientX, clientY, deltaY, deltaX } = e;
+    // Zoom
+    if (ctrlKey) {
+      // Track point mouse
+      const xf = clientX - left;
+      const yf = clientY - top;
 
-    const { clientX, clientY, deltaY } = e;
+      // scale
+      const delta = deltaY;
+      const scaleIn = 1.2;
+      const scaleOut = 1 / scaleIn;
+      let newZoom;
 
-    // Track point mouse
-    const xf = clientX - left;
-    const yf = clientY - top;
+      if (delta < 0) newZoom = zoom * scaleIn;
+      else newZoom = zoom * scaleOut;
 
-    // scale
-    const delta = deltaY;
-    const scaleIn = 1.2;
-    const scaleOut = 1 / scaleIn;
-    let newZoom;
+      // Scale Track point and then get new point after scale
+      let newXf;
+      let newYf;
+      if (delta < 0) {
+        newXf = scaleIn * xf;
+        newYf = scaleIn * yf;
+      } else {
+        newXf = xf * scaleOut;
+        newYf = yf * scaleOut;
+      }
 
-    if (delta < 0) newZoom = zoom * scaleIn;
-    else newZoom = zoom * scaleOut;
+      // Find Translate x and Translate y
+      const Tx = xf - newXf;
+      const Ty = yf - newYf;
 
-    // Scale Track point and then get new point after scale
-    let newXf;
-    let newYf;
-    if (delta < 0) {
-      newXf = scaleIn * xf;
-      newYf = scaleIn * yf;
-    } else {
-      newXf = xf * scaleOut;
-      newYf = yf * scaleOut;
-    }
+      const newTop = top + Ty;
+      const newLeft = left + Tx;
 
-    // Find Translate x and Translate y
-    const Tx = xf - newXf;
-    const Ty = yf - newYf;
+      if (newLeft >= 0 || newTop >= 0 || newZoom > 100) return;
+      if (
+        newLeft <= -(CANVAS_WIDTH * newZoom - windowW) ||
+        newTop <= -(CANVAS_HEIGHT * newZoom - windowH)
+      )
+        return;
 
-    const newTop = top + Ty;
-    const newLeft = left + Tx;
+      setZoom(newZoom);
+      setTop((t) => t + Ty);
+      setLeft((l) => l + Tx);
 
-    if (newLeft >= 0 || newTop >= 0 || newZoom > 100) return;
-    if (
-      newLeft <= -(CANVAS_WIDTH * newZoom - windowW) ||
-      newTop <= -(CANVAS_HEIGHT * newZoom - windowH)
-    )
       return;
+    }
+    // Scroll Y
+    const newY = top - deltaY;
+    if (newY <= 0 && newY >= -(canvasH - windowH)) setTop(newY);
 
-    setZoom(newZoom);
-    setTop((t) => t + Ty);
-    setLeft((l) => l + Tx);
+    // Scroll X
+    const newX = left - deltaX;
+    if (newX <= 0 && newX >= -(canvasW - windowW)) setLeft((l) => l - deltaX);
   };
 
   const handleAddObject = () => {
@@ -761,7 +771,6 @@ const Canvas = () => {
           setIsMouseInsideCanvas(false);
         }}
       >
-        <Box w="1%" h="1%" background="blue.200" position="absolute" top="20%" left="20%" />
         <Box
           w={widthInCanvas(template.width)}
           h={heightInCanvas(template.height)}
@@ -841,6 +850,16 @@ const Canvas = () => {
           onClick={handleDeselect}
         ></Box>
       </Box>
+
+      {/* ScrollBar Component */}
+      {zoom > 0.35 ? (
+        <ScrollBar
+          windowH={windowH}
+          windowW={windowW}
+          canvasH={CANVAS_HEIGHT * zoom}
+          canvasW={CANVAS_WIDTH * zoom}
+        />
+      ) : null}
 
       {/* Zoom Indicator */}
       {import.meta.env.DEV ? (
