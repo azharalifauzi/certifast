@@ -21,8 +21,8 @@ const ScrollBar: React.FC<ScrollBarProps> = ({ windowH, windowW, canvasH, canvas
   const [triggerMoveY, setTriggerMoveY] = useState(false);
   const [translateX, setTranslateX] = useState<number>(0);
   const [translateY, setTranslateY] = useState<number>(0);
-  const scrollBarHeight = useMemo(() => 0.2 * windowH * zoom, [zoom, windowH]);
-  const scrollBarWidth = useMemo(() => 0.2 * windowW * zoom, [zoom, windowW]);
+  const scrollBarHeight = useMemo(() => (0.2 * windowH) / zoom, [zoom, windowH]);
+  const scrollBarWidth = useMemo(() => (0.2 * windowW) / zoom, [zoom, windowW]);
 
   useEffect(() => {
     if (!triggerMoveY) {
@@ -77,7 +77,6 @@ const ScrollBar: React.FC<ScrollBarProps> = ({ windowH, windowW, canvasH, canvas
         left="14"
         height="2"
         borderRadius="10px"
-        width={scrollBarWidth}
         zIndex="100"
         background="blackAlpha.500"
         _hover={{ background: 'blackAlpha.600' }}
@@ -87,6 +86,9 @@ const ScrollBar: React.FC<ScrollBarProps> = ({ windowH, windowW, canvasH, canvas
         }}
         transform={`translateX(${translateX}px)`}
         draggable={false}
+        style={{
+          width: scrollBarWidth,
+        }}
       ></Box>
       {/* Scrollbar Y */}
       <Box
@@ -106,6 +108,9 @@ const ScrollBar: React.FC<ScrollBarProps> = ({ windowH, windowW, canvasH, canvas
         }}
         transform={`translateY(${translateY}px)`}
         draggable={false}
+        style={{
+          height: scrollBarHeight,
+        }}
       ></Box>
     </>
   );
