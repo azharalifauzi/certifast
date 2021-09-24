@@ -686,7 +686,13 @@ const Canvas = () => {
 
       // scale
       const delta = deltaY;
-      const scaleIn = 1.2;
+      const add = Math.abs(deltaY) > 100 ? deltaY * 0.001 : deltaY * 0.01;
+      let scaleIn = 1 + Math.abs(add);
+
+      if (scaleIn > 2) {
+        scaleIn = 1.5;
+      }
+
       const scaleOut = 1 / scaleIn;
       let newZoom;
 
