@@ -24,12 +24,14 @@ import { atomWithStorage } from 'jotai/utils';
 import { debounce } from 'helpers';
 import { useSelectionBox, useUndo } from 'hooks';
 import MultiSelectBox from './MultiSelectBox';
+import ScrollBar from './ScrollBar';
+import cloneDeep from 'clone-deep';
 
 const CANVAS_HEIGHT = 10_000;
 const CANVAS_WIDTH = 10_000;
 
-const topCanvas = atom(CANVAS_HEIGHT / 2);
-const leftCanvas = atom(CANVAS_WIDTH / 2);
+export const topCanvas = atom(CANVAS_HEIGHT / 2);
+export const leftCanvas = atom(CANVAS_WIDTH / 2);
 export const zoomCanvas = atomWithStorage('zoom', 1.0);
 
 const widthInCanvas = (w: number): string => `${(w / CANVAS_WIDTH) * 100}%`;
@@ -114,13 +116,14 @@ const Canvas = () => {
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (ctrlKey || e.metaKey) e.preventDefault();
+      if (isMouseInsideCanvas || (!isMouseInsideCanvas && (e.ctrlKey || e.metaKey)))
+        e.preventDefault();
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => window.removeEventListener('wheel', handleWheel);
-  }, [ctrlKey]);
+  }, [isMouseInsideCanvas]);
 
   // mouse position listener relative to certif template
   useEffect(() => {
@@ -568,103 +571,172 @@ const Canvas = () => {
     const handleMovingFalse = debounce(() => setObjectMoving(false), 800);
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!selected) return;
-
-      switch (e.key) {
-        case 'ArrowUp':
-          setObjectMoving(true);
-          setCObjects((obj) => {
-            const newObj = { ...obj };
-            if (e.shiftKey) newObj[selected].data.y -= 10;
-            else newObj[selected].data.y--;
-            return newObj;
-          });
-          break;
-        case 'ArrowDown':
-          setObjectMoving(true);
-          setCObjects((obj) => {
-            const newObj = { ...obj };
-            if (e.shiftKey) newObj[selected].data.y += 10;
-            else newObj[selected].data.y++;
-            return newObj;
-          });
-          break;
-        case 'ArrowLeft':
-          setObjectMoving(true);
-          setCObjects((obj) => {
-            const newObj = { ...obj };
-            if (e.shiftKey) newObj[selected].data.x -= 10;
-            else newObj[selected].data.x--;
-            return newObj;
-          });
-          break;
-        case 'ArrowRight':
-          setObjectMoving(true);
-          setCObjects((obj) => {
-            const newObj = { ...obj };
-            if (e.shiftKey) newObj[selected].data.x += 10;
-            else newObj[selected].data.x++;
-            return newObj;
-          });
-          break;
-        default:
-          break;
+      if (selected) {
+        switch (e.key) {
+          case 'ArrowUp':
+            setObjectMoving(true);
+            setCObjects((obj) => {
+              const newObj = cloneDeep(obj);
+              if (e.shiftKey) newObj[selected].data.y -= 10;
+              else newObj[selected].data.y--;
+              return newObj;
+            });
+            break;
+          case 'ArrowDown':
+            setObjectMoving(true);
+            setCObjects((obj) => {
+              const newObj = cloneDeep(obj);
+              if (e.shiftKey) newObj[selected].data.y += 10;
+              else newObj[selected].data.y++;
+              return newObj;
+            });
+            break;
+          case 'ArrowLeft':
+            setObjectMoving(true);
+            setCObjects((obj) => {
+              const newObj = cloneDeep(obj);
+              if (e.shiftKey) newObj[selected].data.x -= 10;
+              else newObj[selected].data.x--;
+              return newObj;
+            });
+            break;
+          case 'ArrowRight':
+            setObjectMoving(true);
+            setCObjects((obj) => {
+              const newObj = cloneDeep(obj);
+              if (e.shiftKey) newObj[selected].data.x += 10;
+              else newObj[selected].data.x++;
+              return newObj;
+            });
+            break;
+          default:
+            break;
+        }
+        handleMovingFalse();
+        return;
       }
 
-      handleMovingFalse();
+      if (multiSelectedObj.length > 1) {
+        switch (e.key) {
+          case 'ArrowUp':
+            setObjectMoving(true);
+            setCObjects((obj) => {
+              const newObj = cloneDeep(obj);
+              multiSelectedObj.forEach((id) => {
+                if (e.shiftKey) newObj[id].data.y -= 10;
+                else newObj[id].data.y--;
+              });
+              return newObj;
+            });
+            break;
+          case 'ArrowDown':
+            setObjectMoving(true);
+            setCObjects((obj) => {
+              const newObj = cloneDeep(obj);
+              multiSelectedObj.forEach((id) => {
+                if (e.shiftKey) newObj[id].data.y += 10;
+                else newObj[id].data.y++;
+              });
+              return newObj;
+            });
+            break;
+          case 'ArrowLeft':
+            setObjectMoving(true);
+            setCObjects((obj) => {
+              const newObj = cloneDeep(obj);
+              multiSelectedObj.forEach((id) => {
+                if (e.shiftKey) newObj[id].data.x -= 10;
+                else newObj[id].data.x--;
+              });
+              return newObj;
+            });
+            break;
+          case 'ArrowRight':
+            setObjectMoving(true);
+            setCObjects((obj) => {
+              const newObj = cloneDeep(obj);
+              multiSelectedObj.forEach((id) => {
+                if (e.shiftKey) newObj[id].data.x += 10;
+                else newObj[id].data.x++;
+              });
+              return newObj;
+            });
+            break;
+          default:
+            break;
+        }
+        handleMovingFalse();
+        return;
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown, { capture: false });
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selected, setCObjects, setObjectMoving]);
+  }, [selected, setCObjects, setObjectMoving, multiSelectedObj]);
 
   const handleWheel: React.WheelEventHandler<HTMLDivElement> = (e) => {
-    if (!ctrlKey) return;
+    const { clientX, clientY, deltaY, deltaX } = e;
 
-    const { clientX, clientY, deltaY } = e;
+    // Zoom
+    if (e.ctrlKey || ctrlKey) {
+      // Track point mouse
+      const xf = clientX - left;
+      const yf = clientY - top;
 
-    // Track point mouse
-    const xf = clientX - left;
-    const yf = clientY - top;
+      // scale
+      const delta = deltaY;
+      const add = Math.abs(deltaY) > 100 ? deltaY * 0.001 : deltaY * 0.01;
+      let scaleIn = 1 + Math.abs(add);
 
-    // scale
-    const delta = deltaY;
-    const scaleIn = 1.2;
-    const scaleOut = 1 / scaleIn;
-    let newZoom;
+      if (scaleIn > 2) {
+        scaleIn = 1.5;
+      }
 
-    if (delta < 0) newZoom = zoom * scaleIn;
-    else newZoom = zoom * scaleOut;
+      const scaleOut = 1 / scaleIn;
+      let newZoom;
 
-    // Scale Track point and then get new point after scale
-    let newXf;
-    let newYf;
-    if (delta < 0) {
-      newXf = scaleIn * xf;
-      newYf = scaleIn * yf;
-    } else {
-      newXf = xf * scaleOut;
-      newYf = yf * scaleOut;
-    }
+      if (delta < 0) newZoom = zoom * scaleIn;
+      else newZoom = zoom * scaleOut;
 
-    // Find Translate x and Translate y
-    const Tx = xf - newXf;
-    const Ty = yf - newYf;
+      // Scale Track point and then get new point after scale
+      let newXf;
+      let newYf;
+      if (delta < 0) {
+        newXf = scaleIn * xf;
+        newYf = scaleIn * yf;
+      } else {
+        newXf = xf * scaleOut;
+        newYf = yf * scaleOut;
+      }
 
-    const newTop = top + Ty;
-    const newLeft = left + Tx;
+      // Find Translate x and Translate y
+      const Tx = xf - newXf;
+      const Ty = yf - newYf;
 
-    if (newLeft >= 0 || newTop >= 0 || newZoom > 100) return;
-    if (
-      newLeft <= -(CANVAS_WIDTH * newZoom - windowW) ||
-      newTop <= -(CANVAS_HEIGHT * newZoom - windowH)
-    )
+      const newTop = top + Ty;
+      const newLeft = left + Tx;
+
+      if (newLeft >= 0 || newTop >= 0 || newZoom > 100) return;
+      if (
+        newLeft <= -(CANVAS_WIDTH * newZoom - windowW) ||
+        newTop <= -(CANVAS_HEIGHT * newZoom - windowH)
+      )
+        return;
+
+      setZoom(newZoom);
+      setTop((t) => t + Ty);
+      setLeft((l) => l + Tx);
+
       return;
+    }
+    // Scroll Y
+    const newY = top - deltaY;
+    if (newY <= 0 && newY >= -(canvasH - windowH)) setTop(newY);
 
-    setZoom(newZoom);
-    setTop((t) => t + Ty);
-    setLeft((l) => l + Tx);
+    // Scroll X
+    const newX = left - deltaX;
+    if (newX <= 0 && newX >= -(canvasW - windowW)) setLeft((l) => l - deltaX);
   };
 
   const handleAddObject = () => {
@@ -761,7 +833,6 @@ const Canvas = () => {
           setIsMouseInsideCanvas(false);
         }}
       >
-        <Box w="1%" h="1%" background="blue.200" position="absolute" top="20%" left="20%" />
         <Box
           w={widthInCanvas(template.width)}
           h={heightInCanvas(template.height)}
@@ -841,6 +912,16 @@ const Canvas = () => {
           onClick={handleDeselect}
         ></Box>
       </Box>
+
+      {/* ScrollBar Component */}
+      {zoom > 0.35 ? (
+        <ScrollBar
+          windowH={windowH}
+          windowW={windowW}
+          canvasH={CANVAS_HEIGHT * zoom}
+          canvasW={CANVAS_WIDTH * zoom}
+        />
+      ) : null}
 
       {/* Zoom Indicator */}
       {import.meta.env.DEV ? (
