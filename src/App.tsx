@@ -3,9 +3,11 @@ import { Canvas, Sidebar, Toolbar } from 'components';
 import './App.css';
 import { useAtom } from 'jotai';
 import { certifTemplate } from 'gstates';
-import { Box, Flex, Text, useToast } from '@chakra-ui/react';
+import { Box, Flex, Text, useToast, useMediaQuery } from '@chakra-ui/react';
 import { FileDrop } from 'react-file-drop';
 import { BsCardImage } from 'react-icons/bs';
+import { ILMobile } from 'assets';
+import { useWindowSize } from 'react-use';
 import * as gtag from 'libs/gtag';
 import 'react-select/dist/react-select.css';
 import 'react-virtualized/styles.css';
@@ -15,6 +17,8 @@ import 'react-color-palette/lib/css/styles.css';
 function App() {
   const [template, setTemplate] = useAtom(certifTemplate);
   const toast = useToast();
+  const [isMobile] = useMediaQuery('(max-width: 550px)');
+  const { height } = useWindowSize();
 
   const handleFileDrop = async (files: FileList | null, e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -69,27 +73,39 @@ function App() {
   };
 
   return (
-    <div className="App">
-      {template.file.length > 0 ? (
-        <Canvas />
+    <>
+      {isMobile ? (
+        <Flex flexDir="column" px="6" h={height} justifyContent="center" alignItems="center">
+          <Box mb="6" as="img" src={ILMobile} />
+          <Text fontWeight="semibold" textAlign="center">
+            We&apos;re really sorry, Certifast is not available on phone. Please use a bigger screen
+            size such as laptop / PC.
+          </Text>
+        </Flex>
       ) : (
-        <Box background="gray.100" position="fixed" top="0" bottom="0" right="72" left="14">
-          <FileDrop onDrop={handleFileDrop}>
-            <Flex justifyContent="center" alignItems="center" flexDir="column" height="100%">
-              <Box mb="2">
-                <BsCardImage color="#000" size={64} />
-              </Box>
-              <Text mb="1" fontWeight="semibold">
-                Drop Certificate Template Here!
-              </Text>
-              <Text fontSize="xs">Support only PNG Format</Text>
-            </Flex>
-          </FileDrop>
-        </Box>
+        <div className="App">
+          {template.file.length > 0 ? (
+            <Canvas />
+          ) : (
+            <Box background="gray.100" position="fixed" top="0" bottom="0" right="72" left="14">
+              <FileDrop onDrop={handleFileDrop}>
+                <Flex justifyContent="center" alignItems="center" flexDir="column" height="100%">
+                  <Box mb="2">
+                    <BsCardImage color="#000" size={64} />
+                  </Box>
+                  <Text mb="1" fontWeight="semibold">
+                    Drop Certificate Template Here!
+                  </Text>
+                  <Text fontSize="xs">Support only PNG Format</Text>
+                </Flex>
+              </FileDrop>
+            </Box>
+          )}
+          <Sidebar />
+          <Toolbar />
+        </div>
       )}
-      <Sidebar />
-      <Toolbar />
-    </div>
+    </>
   );
 }
 
