@@ -4,7 +4,7 @@ extern crate serde_json;
 extern crate zip;
 
 use base64::decode;
-use image::{DynamicImage, GenericImageView, ImageFormat, Rgba};
+use image::{codecs::jpeg, DynamicImage, GenericImageView, ImageFormat, Rgba};
 use imageproc::drawing::draw_text_mut;
 use js_sys::{Function, Uint8Array};
 use rusttype::{Font, Scale};
@@ -148,6 +148,7 @@ fn load_image_from_array(_array: &[u8]) -> DynamicImage {
             panic!("There was a problem opening the file: {:?}", error)
         }
     };
+
     return img;
 }
 
@@ -155,7 +156,10 @@ fn get_image_as_array(_img: DynamicImage) -> Vec<u8> {
     // Create fake "file"
     let mut c = Cursor::new(Vec::new());
 
-    match _img.write_to(&mut c, ImageFormat::Jpeg) {
+    let mut img_with_quality = jpeg::JpegEncoder::new_with_quality(&mut c, 100);
+    img_with_quality.set_pixel_density(jpeg::PixelDensity::dpi(300));
+
+    match img_with_quality.encode_image(&_img) {
         Ok(c) => c,
         Err(error) => {
             console::log_1(&JsValue::from_str(&error.to_string()));
