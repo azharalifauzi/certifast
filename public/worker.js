@@ -11,15 +11,19 @@ self.addEventListener('message', (e) => {
     case 'print':
       if (!instance) return;
       instance.then(() => {
-        const result = wasm_bindgen.print_many_certificate(
-          msg.texts,
-          msg.certif_template,
-          (val) => {
-            self.postMessage({ data: val, type: 'progress' });
-          }
-        );
+        try {
+          const result = wasm_bindgen.print_many_certificate(
+            msg.texts,
+            msg.certif_template,
+            (val) => {
+              self.postMessage({ data: val, type: 'progress' });
+            }
+          );
 
-        self.postMessage({ data: result, type: 'print' });
+          self.postMessage({ data: result, type: 'print' });
+        } catch (error) {
+          self.postMessage({ type: 'error', data: error });
+        }
       });
       break;
 
