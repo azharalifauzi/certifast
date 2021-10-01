@@ -1,10 +1,12 @@
+extern crate chrono;
 extern crate js_sys;
 extern crate serde;
 extern crate serde_json;
 extern crate zip;
 
 use base64::decode;
-use image::{codecs::jpeg, DynamicImage, GenericImageView, ImageFormat, Rgba};
+use chrono::{Datelike, Timelike};
+use image::{codecs::jpeg, DynamicImage, GenericImageView, Rgba};
 use imageproc::drawing::draw_text_mut;
 use js_sys::{Function, Uint8Array};
 use rusttype::{Font, Scale};
@@ -14,7 +16,7 @@ use std::panic;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 use web_sys::console;
-use zip::{write, CompressionMethod, ZipWriter};
+use zip::{write, CompressionMethod, DateTime, ZipWriter};
 
 #[wasm_bindgen]
 extern "C" {
@@ -95,9 +97,21 @@ pub fn print_many_certificate(
     let options = write::FileOptions::default().compression_method(CompressionMethod::Stored);
     for (index, the_img) in array_of_images.iter().enumerate() {
         let data = &dynamic_texts[index][0];
-
-        zip.start_file(&format!("{}.jpeg", data.text), options)
-            .unwrap();
+        let now_utc = chrono::Local::now();
+        let now = DateTime::from_date_and_time(
+            now_utc.year() as u16,
+            now_utc.month() as u8,
+            now_utc.day() as u8,
+            now_utc.hour() as u8,
+            now_utc.minute() as u8,
+            now_utc.second() as u8,
+        )
+        .unwrap();
+        zip.start_file(
+            &format!("{}.jpeg", data.text),
+            options.last_modified_time(now),
+        )
+        .unwrap();
         let img = &the_img[..];
         zip.write(img).unwrap();
     }
