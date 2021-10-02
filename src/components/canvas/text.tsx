@@ -86,8 +86,8 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   useEffect(() => {
     setCObjects((objects) => {
       const newObj = { ...objects };
-      newObj[id].data.height = height / zoom;
-      newObj[id].data.width = width / zoom;
+      newObj[id].data.height = height / zoom + 2;
+      newObj[id].data.width = width / zoom + 2;
 
       return newObj;
     });
