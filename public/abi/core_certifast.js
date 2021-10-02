@@ -287,6 +287,18 @@ async function init(input) {
         var ret = getObject(arg0).call(getObject(arg1), getObject(arg2));
         return addHeapObject(ret);
     }, arguments) };
+    imports.wbg.__wbg_getTime_f3eeeeabe6c35f9a = function(arg0) {
+        var ret = getObject(arg0).getTime();
+        return ret;
+    };
+    imports.wbg.__wbg_getTimezoneOffset_a1875382531079bf = function(arg0) {
+        var ret = getObject(arg0).getTimezoneOffset();
+        return ret;
+    };
+    imports.wbg.__wbg_new0_43142faea9f41977 = function() {
+        var ret = new Date();
+        return addHeapObject(ret);
+    };
     imports.wbg.__wbg_buffer_eb2155f17856c20b = function(arg0) {
         var ret = getObject(arg0).buffer;
         return addHeapObject(ret);

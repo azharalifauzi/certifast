@@ -219,6 +219,18 @@ const Sidebar = () => {
           setProgress(msg.data + 1);
         } else setProgressState('archiving');
       }
+
+      if (msg.type === 'error') {
+        toast({
+          title: 'Something went wrong, try to change input format from excel to "TEXT"',
+          status: 'error',
+          position: 'top',
+          duration: 3000,
+        });
+
+        setProgressState('end');
+        setIsProgressModalOpen(false);
+      }
     });
 
     setProgressState('end');
