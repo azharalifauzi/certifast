@@ -38,6 +38,7 @@ import { useAtomValue } from 'jotai/utils';
 import Loading from 'components/loading';
 import * as gtag from 'libs/gtag';
 import { supabase } from 'libs/supabase';
+import jsPDF from 'jspdf';
 
 const Sidebar = () => {
   const [certifTemplate, setCertifTemplate] = useAtom(certifTemplateAtom);
@@ -55,8 +56,9 @@ const Sidebar = () => {
   const [progress, setProgress] = useState<number>(0);
   const [totalProgress, setTotalProgress] = useState<number>(0);
   const [progressState, setProgressState] = useState<
-    'init' | 'load image' | 'printing' | 'archiving' | 'end'
+    'init' | 'load image' | 'printing' | 'archiving' | 'end' | 'convertPdf'
   >('init');
+  const [fileFormat, setFileFormat] = useState<'jpg' | 'pdf'>('jpg');
   const toast = useToast();
 
   const handleProcessData = async () => {
@@ -171,7 +173,14 @@ const Sidebar = () => {
     const arrBuff = decode(imgBase64);
     const imgUnitArr = new Uint8Array(arrBuff);
 
-    worker.postMessage({ type: 'print', texts: certificateInput, certif_template: imgUnitArr });
+    if (fileFormat === 'jpg')
+      worker.postMessage({ type: 'print', texts: certificateInput, certif_template: imgUnitArr });
+    else if (fileFormat === 'pdf')
+      worker.postMessage({
+        type: 'print_pdf',
+        texts: certificateInput,
+        certif_template: imgUnitArr,
+      });
 
     worker.addEventListener('message', (e) => {
       const msg = e.data;
@@ -210,6 +219,31 @@ const Sidebar = () => {
                 res.status.toString().startsWith('2') ? 'Send Analytics' : 'Analytics failed'
               )
             );
+      }
+
+      if (msg.type === 'print_pdf') {
+        const images: Uint8Array[] = msg.data;
+        const files: Uint8Array[] = [];
+        const file_names: string[] = [];
+
+        for (let i = 0; i < images.length; i++) {
+          setProgressState('convertPdf');
+          setProgress(i + 1);
+          const image = images[i];
+          const pdf = new jsPDF({
+            unit: 'px',
+            format: [certifTemplate.width, certifTemplate.height],
+            orientation: certifTemplate.width > certifTemplate.height ? 'landscape' : 'portrait',
+            hotfixes: ['px_scaling'],
+          });
+          pdf.addImage(image, 'JPEG', 0, 0, certifTemplate.width, certifTemplate.height);
+          const file = new Uint8Array(pdf.output('arraybuffer'));
+          files.push(file);
+          file_names.push(certificateInput[i][0].text.toString());
+        }
+
+        setProgressState('archiving');
+        worker.postMessage({ type: 'archive', files, file_names });
       }
 
       if (msg.type === 'progress') {
@@ -270,7 +304,9 @@ const Sidebar = () => {
                 </Text>{' '}
               </>
             ) : null}
-            {progressState === 'printing' || progressState === 'archiving' ? (
+            {progressState === 'printing' ||
+            progressState === 'archiving' ||
+            progressState === 'convertPdf' ? (
               <Box mt="12">
                 <Text fontWeight="medium" mb="6">
                   Progress
@@ -280,7 +316,10 @@ const Sidebar = () => {
                   <Text fontWeight="medium">Downloading your files</Text>
                 ) : (
                   <Text fontWeight="medium">
-                    Generating Certificate {progress} of {totalProgress}
+                    {progressState === 'convertPdf'
+                      ? 'Converting Image to PDF'
+                      : 'Generating Certificate'}{' '}
+                    {progress} of {totalProgress}
                   </Text>
                 )}
               </Box>
@@ -290,24 +329,50 @@ const Sidebar = () => {
       </Modal>
       <Modal isCentered isOpen={confirmGenerateCert} onClose={() => setConfirmGenerateCert(false)}>
         <ModalOverlay />
-        <ModalContent h="48">
+        <ModalContent h="72">
           <ModalBody pt="9" fontSize="sm">
-            <Text fontWeight="semibold" mb="4">
-              Choose which input that will become a file name:
-            </Text>
-            <VirtualizedSelect
-              searchable={false}
-              clearable={false}
-              options={Object.values(cObjects).map(({ data }) => ({
-                label: data.text,
-                value: data.id,
-              }))}
-              value={selectedFileName || Object.keys(cObjects)[0]}
-              // @ts-ignore
-              onChange={({ value }) => {
-                setSelectedFileName(value);
-              }}
-            />
+            <Box mb="4">
+              <Text fontWeight="semibold" mb="4">
+                Choose which input that will become a file name:
+              </Text>
+              <VirtualizedSelect
+                searchable={false}
+                clearable={false}
+                options={Object.values(cObjects).map(({ data }) => ({
+                  label: data.text,
+                  value: data.id,
+                }))}
+                value={selectedFileName || Object.keys(cObjects)[0]}
+                // @ts-ignore
+                onChange={({ value }) => {
+                  setSelectedFileName(value);
+                }}
+              />
+            </Box>
+            <Box>
+              <Text fontWeight="semibold" mb="4">
+                Choose file format:
+              </Text>
+              <VirtualizedSelect
+                searchable={false}
+                clearable={false}
+                options={[
+                  {
+                    value: 'jpg',
+                    label: 'JPG',
+                  },
+                  {
+                    value: 'pdf',
+                    label: 'PDF',
+                  },
+                ]}
+                value={fileFormat}
+                // @ts-ignore
+                onChange={({ value }) => {
+                  setFileFormat(value);
+                }}
+              />
+            </Box>
           </ModalBody>
           <ModalFooter>
             <Button

@@ -23,6 +23,19 @@ declare namespace wasm_bindgen {
 	* @returns {Uint8Array}
 	*/
 	export function print_certificate(text: string, certif_template: Uint8Array, font_fam: string, x: number, y: number, font_size: number, color: Uint8Array): Uint8Array;
+	/**
+	* @param {any} texts
+	* @param {Uint8Array} certif_template
+	* @param {Function} callback
+	* @returns {(Uint8Array)[]}
+	*/
+	export function print_many_certificate_without_zip(texts: any, certif_template: Uint8Array, callback: Function): (Uint8Array)[];
+	/**
+	* @param {(Uint8Array)[]} files
+	* @param {any} file_names
+	* @returns {Uint8Array}
+	*/
+	export function archive(files: (Uint8Array)[], file_names: any): Uint8Array;
 	
 }
 
@@ -33,6 +46,8 @@ declare interface InitOutput {
   readonly hello: (a: number, b: number) => void;
   readonly print_many_certificate: (a: number, b: number, c: number, d: number) => void;
   readonly print_certificate: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => void;
+  readonly print_many_certificate_without_zip: (a: number, b: number, c: number, d: number) => void;
+  readonly archive: (a: number, b: number, c: number, d: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
