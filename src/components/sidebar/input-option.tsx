@@ -20,6 +20,14 @@ import {
   AlertDialogHeader,
   AlertDialogBody,
   AlertDialogFooter,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { canvasObjects, CanvasTextMeta, dynamicTextInput } from 'gstates';
 import { useAtom } from 'jotai';
@@ -28,24 +36,106 @@ import React, { useMemo, memo, useState, useRef } from 'react';
 import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
 import { BsGrid, BsTrash } from 'react-icons/bs';
 import XLSX from 'xlsx';
+import { textColumn, DataSheetGrid, keyColumn, Column } from 'react-datasheet-grid';
 
 const InputOption = () => {
   const cObjects = useAtomValue(canvasObjects);
+  const { isOpen, onClose, onOpen } = useDisclosure();
 
   return (
-    <Box h="calc(100% - 45.8px)" overflowY="auto">
-      {Object.values(cObjects).map(({ type, data }) => {
-        if (type === 'text') {
-          return <TextInput key={data.id} data={data} />;
-        }
+    <>
+      <ManageInputSpreadSheet isOpen={isOpen} onClose={onClose} />
+      <Box h="calc(100% - 45.8px)" overflowY="auto">
+        <Box p="4">
+          <Button onClick={onOpen} w="100%" size="sm" variant="outline" colorScheme="whatsapp">
+            Manage Input
+          </Button>
+        </Box>
+        {Object.values(cObjects).map(({ type, data }) => {
+          if (type === 'text') {
+            return <TextInput key={data.id} data={data} />;
+          }
 
-        return null;
-      })}
-    </Box>
+          return null;
+        })}
+      </Box>
+    </>
   );
 };
 
 export default memo(InputOption);
+
+interface ManageInputSpreadSheetProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen, onClose }) => {
+  const [inputs, setInputs] = useAtom(dynamicTextInput);
+  const cObjects = useAtomValue(canvasObjects);
+
+  const columns: Column[] = Object.values(cObjects)
+    .map(({ type, data }) =>
+      type === 'text' ? { ...keyColumn(data.id, textColumn), title: data.text, minWidth: 200 } : {}
+    )
+    .filter((val) => val !== {});
+
+  const data = useMemo(() => {
+    const array = [];
+    const maxLength = Math.max(...Object.values(inputs).map((val) => val.length));
+
+    for (let i = 0; i < maxLength; i++) {
+      const arrayData: Record<string, string> = {};
+      Object.keys(inputs).forEach((key) => {
+        arrayData[key] = inputs[key][i];
+      });
+
+      array.push(arrayData);
+    }
+
+    return array;
+  }, [inputs]);
+
+  return (
+    <Modal size="6xl" isCentered isOpen={isOpen} onClose={onClose}>
+      <ModalOverlay />
+      <ModalContent height="80%">
+        <ModalHeader>Manage Input</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <DataSheetGrid
+            value={data}
+            columns={columns}
+            onChange={(value: Record<string, string>[]) => {
+              const data: Record<string, string[]> = {};
+
+              value.forEach((val) => {
+                if (Object.keys(val).length === 0) {
+                  Object.keys(cObjects).forEach((key) => {
+                    val[key] = '';
+                  });
+                }
+
+                Object.keys(val).forEach((key) => {
+                  if (typeof data[key] === 'undefined') data[key] = [];
+
+                  data[key].push(val[key]);
+                });
+              });
+
+              setInputs(data);
+            }}
+          />
+        </ModalBody>
+        <ModalFooter>
+          <Button colorScheme="blue" variant="outline" size="sm" onClick={onClose}>
+            Close
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
 
 interface TextInputProps {
   data: CanvasTextMeta;
