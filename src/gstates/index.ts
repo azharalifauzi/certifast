@@ -54,3 +54,5 @@ export const isObjectMoving = atom<boolean>(false);
 
 type Event = 'resize' | 'move' | 'pan' | 'select' | 'multiselect' | 'idle' | 'zoom' | 'textedit';
 export const activeEvent = atom<Event>('idle');
+
+export const preventCanvasShortcut = atom<boolean>(false);

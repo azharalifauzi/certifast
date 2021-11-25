@@ -29,35 +29,62 @@ import {
   ModalCloseButton,
   useDisclosure,
 } from '@chakra-ui/react';
-import { canvasObjects, CanvasTextMeta, dynamicTextInput } from 'gstates';
+import {
+  canvasObjects,
+  CanvasTextMeta,
+  dynamicTextInput,
+  preventToolbar as preventToolbarAtom,
+  preventCanvasShortcut as preventCanvasShortcutAtom,
+} from 'gstates';
 import { useAtom } from 'jotai';
-import { useAtomValue } from 'jotai/utils';
-import React, { useMemo, memo, useState, useRef } from 'react';
+import { useAtomValue, useUpdateAtom } from 'jotai/utils';
+import React, { useMemo, memo, useState, useRef, useEffect } from 'react';
 import { AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
 import { BsGrid, BsTrash } from 'react-icons/bs';
 import XLSX from 'xlsx';
 import { textColumn, DataSheetGrid, keyColumn, Column } from 'react-datasheet-grid';
+import { useMeasure } from 'react-use';
+import cloneDeep from 'clone-deep';
 
 const InputOption = () => {
   const cObjects = useAtomValue(canvasObjects);
+  const setPreventToolbar = useUpdateAtom(preventToolbarAtom);
+  const setPreventCanvasShortcut = useUpdateAtom(preventCanvasShortcutAtom);
   const { isOpen, onClose, onOpen } = useDisclosure();
 
   return (
     <>
-      <ManageInputSpreadSheet isOpen={isOpen} onClose={onClose} />
+      <ManageInputSpreadSheet
+        isOpen={isOpen}
+        onClose={() => {
+          setPreventToolbar(false);
+          setPreventCanvasShortcut(false);
+          onClose();
+        }}
+      />
       <Box h="calc(100% - 45.8px)" overflowY="auto">
         <Box p="4">
-          <Button onClick={onOpen} w="100%" size="sm" variant="outline" colorScheme="whatsapp">
+          <Button
+            onClick={() => {
+              setPreventToolbar(true);
+              setPreventCanvasShortcut(true);
+              onOpen();
+            }}
+            w="100%"
+            size="sm"
+            variant="outline"
+            colorScheme="whatsapp"
+          >
             Manage Input
           </Button>
         </Box>
-        {Object.values(cObjects).map(({ type, data }) => {
+        {/* {Object.values(cObjects).map(({ type, data }) => {
           if (type === 'text') {
             return <TextInput key={data.id} data={data} />;
           }
 
           return null;
-        })}
+        })} */}
       </Box>
     </>
   );
@@ -73,6 +100,70 @@ interface ManageInputSpreadSheetProps {
 const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen, onClose }) => {
   const [inputs, setInputs] = useAtom(dynamicTextInput);
   const cObjects = useAtomValue(canvasObjects);
+  const [contentRef, { height }] = useMeasure<HTMLDivElement>();
+  const [data, setData] = useState<Record<string, string>[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const array = [];
+      const maxLength = Math.max(...Object.values(inputs).map((val) => val.length));
+
+      for (let i = 0; i < maxLength; i++) {
+        const arrayData: Record<string, string> = {};
+        Object.keys(inputs).forEach((key) => {
+          arrayData[key] = inputs[key][i];
+        });
+
+        array.push(arrayData);
+      }
+
+      if (maxLength < 100) {
+        const length = 100 - maxLength;
+
+        for (let i = 0; i < length; i++) {
+          const arrayData: Record<string, string> = {};
+
+          Object.keys(inputs).forEach((key) => {
+            arrayData[key] = '';
+          });
+
+          array.push(arrayData);
+        }
+      }
+
+      setData(array);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen)
+      setInputs((inputs) => {
+        const newInputs = cloneDeep(inputs);
+        const maxLength = Math.max(...Object.values(inputs).map((val) => val.length));
+
+        for (let i = 0; i < maxLength; i++) {
+          const condition: boolean[] = [];
+
+          Object.keys(inputs).forEach((key) => {
+            if (inputs[key][i]) condition.push(false);
+            else condition.push(true);
+          });
+
+          if (condition.every((val) => val)) {
+            Object.keys(newInputs).forEach((key) => {
+              delete newInputs[key][i];
+            });
+          }
+        }
+
+        Object.keys(newInputs).forEach((key) => {
+          const newInput = newInputs[key].filter((val) => val !== undefined);
+          newInputs[key] = newInput;
+        });
+
+        return newInputs;
+      });
+  }, [isOpen, setInputs]);
 
   const columns: Column[] = Object.values(cObjects)
     .map(({ type, data }) =>
@@ -80,30 +171,15 @@ const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen,
     )
     .filter((val) => val !== {});
 
-  const data = useMemo(() => {
-    const array = [];
-    const maxLength = Math.max(...Object.values(inputs).map((val) => val.length));
-
-    for (let i = 0; i < maxLength; i++) {
-      const arrayData: Record<string, string> = {};
-      Object.keys(inputs).forEach((key) => {
-        arrayData[key] = inputs[key][i];
-      });
-
-      array.push(arrayData);
-    }
-
-    return array;
-  }, [inputs]);
-
   return (
     <Modal size="6xl" isCentered isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
-      <ModalContent height="80%">
+      <ModalContent ref={contentRef} height="80%">
         <ModalHeader>Manage Input</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <DataSheetGrid
+            height={height * 0.7}
             value={data}
             columns={columns}
             onChange={(value: Record<string, string>[]) => {
@@ -124,6 +200,7 @@ const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen,
               });
 
               setInputs(data);
+              setData(value);
             }}
           />
         </ModalBody>
