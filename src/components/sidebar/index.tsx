@@ -157,8 +157,12 @@ const Sidebar = () => {
 
     const certificateInput: any[][] = [...certificateInputs];
 
-    if (selectedFileName) {
-      const index = inputMetaData[selectedFileName];
+    let selectedName = selectedFileName;
+
+    if (!selectedFileName) selectedName = Object.keys(cObjects)[0];
+
+    if (selectedName) {
+      const index = inputMetaData[selectedName];
 
       certificateInput.forEach((_, idx) => {
         const temp = certificateInput[idx][0];

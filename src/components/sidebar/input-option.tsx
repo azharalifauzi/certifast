@@ -106,7 +106,9 @@ const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen,
   useEffect(() => {
     if (isOpen) {
       const array = [];
-      const maxLength = Math.max(...Object.values(inputs).map((val) => val.length));
+      let maxLength = Math.max(...Object.values(inputs).map((val) => val.length));
+
+      if (Object.keys(inputs).length === 0) maxLength = 0;
 
       for (let i = 0; i < maxLength; i++) {
         const arrayData: Record<string, string> = {};
@@ -169,7 +171,7 @@ const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen,
     .map(({ type, data }) =>
       type === 'text' ? { ...keyColumn(data.id, textColumn), title: data.text, minWidth: 200 } : {}
     )
-    .filter((val) => val !== {});
+    .filter((val) => Object.keys(val).length > 0);
 
   return (
     <Modal size="6xl" isCentered isOpen={isOpen} onClose={onClose}>
