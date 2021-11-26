@@ -80,6 +80,18 @@ const Toolbar = () => {
     return () => window.removeEventListener('keypress', handleKeyPress);
   }, [preventToolbar, setActiveToolbar]);
 
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      window.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, []);
+
   return (
     <>
       <AboutModal isOpen={isOpen} onClose={onClose} />
