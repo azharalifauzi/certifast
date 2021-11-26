@@ -511,14 +511,14 @@ const Canvas = () => {
         if (x - _x > 0) {
           rulers.push({
             x: _x * zoom,
-            y: (y + height - 2) * zoom + 2,
+            y: (y + height - 10) * zoom + 2,
             width: (_width + width + x - _x - _width) * zoom,
             height: '1px',
           });
         } else {
           rulers.push({
             x: x * zoom,
-            y: (y + height - 2) * zoom + 2,
+            y: (y + height - 10) * zoom + 2,
             width: (_width + width + _x - width - x) * zoom,
             height: '1px',
           });
