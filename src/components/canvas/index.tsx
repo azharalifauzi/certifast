@@ -432,14 +432,14 @@ const Canvas = () => {
         // if selected object at the bottom of target
         if (y - _y > 0) {
           rulers.push({
-            x: (x + width - 2) * zoom + 2,
+            x: (x + width - 10) * zoom + 2,
             y: _y * zoom,
             width: '1px',
             height: (height + _height + y - _y - _height) * zoom,
           });
         } else {
           rulers.push({
-            x: (x + width - 2) * zoom + 2,
+            x: (x + width - 10) * zoom + 2,
             y: y * zoom,
             width: '1px',
             height: (height + _height + _y - y - height) * zoom,
