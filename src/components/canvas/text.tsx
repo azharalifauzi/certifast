@@ -10,6 +10,7 @@ import {
   activeEvent,
   multiSelected,
   shiftKey as shiftKeyAtom,
+  preventCanvasShortcut as preventCanvasShortcutAtom,
 } from 'gstates';
 import { atom, useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
@@ -43,6 +44,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const spaceKey = useAtomValue(spaceKeyAtom);
   const shiftKey = useAtomValue(shiftKeyAtom);
   const isWilLSnap = useAtomValue(willSnap);
+  const preventCanvasShortcut = useAtomValue(preventCanvasShortcutAtom);
   const setDynamicInputText = useUpdateAtom(dynamicTextInput);
   const setEditGlobal = useUpdateAtom(isEditAtom);
   const [prevZoom, setPrevZoom] = useState(zoom);
@@ -86,8 +88,8 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   useEffect(() => {
     setCObjects((objects) => {
       const newObj = { ...objects };
-      newObj[id].data.height = height / zoom + 2;
-      newObj[id].data.width = width / zoom + 2;
+      newObj[id].data.height = height / zoom + 10;
+      newObj[id].data.width = width / zoom + 10;
 
       return newObj;
     });
@@ -172,7 +174,11 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
 
   useEffect(() => {
     const handleDelete = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selected === id) {
+      if (
+        (e.key === 'Delete' || e.key === 'Backspace') &&
+        selected === id &&
+        !preventCanvasShortcut
+      ) {
         setCObjects((cObjects) => {
           const { [id]: _, ...newCObjects } = cObjects;
           pushToUndoStack(cObjects);
@@ -189,7 +195,15 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
     window.addEventListener('keydown', handleDelete, { capture: false });
 
     return () => window.removeEventListener('keydown', handleDelete);
-  }, [id, selected, setCObjects, setSelected, setDynamicInputText, pushToUndoStack]);
+  }, [
+    id,
+    selected,
+    setCObjects,
+    setSelected,
+    setDynamicInputText,
+    pushToUndoStack,
+    preventCanvasShortcut,
+  ]);
 
   const handleChangeText: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     setCObjects((obj) => {

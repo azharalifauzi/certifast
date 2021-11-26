@@ -26,6 +26,7 @@ import {
   activeToolbar as activeToolbarAtom,
   certifTemplate,
   preventToolbar as preventToolbarAtom,
+  preventCanvasShortcut as preventCanvasShortcutAtom,
 } from 'gstates';
 import { useEffect } from 'react';
 import { useAtomValue } from 'jotai/utils';
@@ -35,27 +36,29 @@ const Toolbar = () => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
   const certTemplate = useAtomValue(certifTemplate);
   const preventToolbar = useAtomValue(preventToolbarAtom);
+  const preventCanvasShortcut = useAtomValue(preventCanvasShortcutAtom);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { undo, redo } = useUndo();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'y':
-          if (e.ctrlKey || e.metaKey) redo();
-          break;
-        case 'z':
-          if (e.ctrlKey || e.metaKey) undo();
-          break;
-        default:
-          break;
-      }
+      if (!preventCanvasShortcut)
+        switch (e.key) {
+          case 'y':
+            if (e.ctrlKey || e.metaKey) redo();
+            break;
+          case 'z':
+            if (e.ctrlKey || e.metaKey) undo();
+            break;
+          default:
+            break;
+        }
     };
 
     window.addEventListener('keydown', handleKeyDown, { capture: false });
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [preventToolbar, setActiveToolbar, undo, redo]);
+  }, [preventToolbar, setActiveToolbar, undo, redo, preventCanvasShortcut]);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -76,6 +79,18 @@ const Toolbar = () => {
 
     return () => window.removeEventListener('keypress', handleKeyPress);
   }, [preventToolbar, setActiveToolbar]);
+
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      window.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, []);
 
   return (
     <>

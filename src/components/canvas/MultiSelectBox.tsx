@@ -201,11 +201,13 @@ const MultiSelectBox = () => {
       if (e.key === 'Delete' || e.key === 'Backspace') {
         setCObjects((cObjects) => {
           pushToUndoStack(cloneDeep(cObjects));
+          let newCObjects = cloneDeep(cObjects);
           selected.forEach((id) => {
-            delete cObjects[id];
+            const { [id]: _, ...otherObjects } = newCObjects;
+            newCObjects = cloneDeep(otherObjects);
           });
 
-          return cObjects;
+          return newCObjects;
         });
         setSelected([]);
         setDynamicInputText((input) => {
