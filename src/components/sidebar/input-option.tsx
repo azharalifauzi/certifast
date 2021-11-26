@@ -24,7 +24,6 @@ import {
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalFooter,
   ModalBody,
   ModalCloseButton,
   useDisclosure,
@@ -100,7 +99,7 @@ interface ManageInputSpreadSheetProps {
 const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen, onClose }) => {
   const [inputs, setInputs] = useAtom(dynamicTextInput);
   const cObjects = useAtomValue(canvasObjects);
-  const [contentRef, { height }] = useMeasure<HTMLDivElement>();
+  const [bodyRef, { height }] = useMeasure<HTMLDivElement>();
   const [data, setData] = useState<Record<string, string>[]>([]);
 
   useEffect(() => {
@@ -176,12 +175,12 @@ const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen,
   return (
     <Modal size="6xl" isCentered isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
-      <ModalContent ref={contentRef} height="80%">
+      <ModalContent height="80%">
         <ModalHeader>Manage Input</ModalHeader>
         <ModalCloseButton />
-        <ModalBody>
+        <ModalBody ref={bodyRef} height="100%">
           <DataSheetGrid
-            height={height * 0.7}
+            height={height - 85}
             value={data}
             columns={columns}
             onChange={(value: Record<string, string>[]) => {
@@ -206,11 +205,6 @@ const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen,
             }}
           />
         </ModalBody>
-        <ModalFooter>
-          <Button colorScheme="blue" variant="outline" size="sm" onClick={onClose}>
-            Close
-          </Button>
-        </ModalFooter>
       </ModalContent>
     </Modal>
   );
