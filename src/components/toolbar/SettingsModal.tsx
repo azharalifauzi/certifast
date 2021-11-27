@@ -17,6 +17,7 @@ import {
   Tr,
   Th,
   Td,
+  TableCaption,
   useToast,
   useDisclosure,
   FormControl,
@@ -97,6 +98,12 @@ const CustomFontsSetting = () => {
   const [fontName, setFontName] = useState<string>('');
   const [format, setFormat] = useState<CustomFont['format']>('ttf');
   const { isOpen, onClose, onOpen } = useDisclosure();
+  const {
+    isOpen: isDeleteModalOpen,
+    onClose: onDeleteModalClose,
+    onOpen: onDeleteModalOpen,
+  } = useDisclosure();
+  const [idToDelete, setIdToDelete] = useState<string>('');
   const toast = useToast();
 
   const handleAddFile: React.ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -147,8 +154,38 @@ const CustomFontsSetting = () => {
     });
   };
 
+  const handleDelete = () => {
+    setCustomFonts((customFonts) => {
+      const font = customFonts.find((val) => val.id === idToDelete);
+      if (font) {
+        const indexOf = customFonts.indexOf(font);
+        customFonts.splice(indexOf, 1);
+      }
+
+      return customFonts;
+    });
+    onDeleteModalClose();
+  };
+
   return (
     <>
+      <Modal size="md" isCentered isOpen={isDeleteModalOpen} onClose={onDeleteModalClose}>
+        <ModalContent border="1px solid" borderColor="blackAlpha.400">
+          <ModalHeader fontSize="md">Delete Font</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody fontSize="sm">
+            <Text>Are you sure you want to delete this font?</Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={onDeleteModalClose} mr="3" size="sm">
+              Cancel
+            </Button>
+            <Button onClick={handleDelete} size="sm" variant="outline" colorScheme="red">
+              Delete
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       <Modal closeOnOverlayClick={false} size="md" isCentered isOpen={isOpen} onClose={onClose}>
         <ModalContent border="1px solid" borderColor="blackAlpha.400">
           <ModalHeader fontSize="md">Add Custom Fonts</ModalHeader>
@@ -202,6 +239,9 @@ const CustomFontsSetting = () => {
           </Box>
         </Flex>
         <Table variant="simple">
+          {customFonts.length > 0 ? (
+            <TableCaption>Please upload only woff or woff2 file format only!</TableCaption>
+          ) : null}
           <Thead>
             <Tr>
               <Th>Fonts</Th>
@@ -210,12 +250,20 @@ const CustomFontsSetting = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {customFonts.map(({ family, format }, i) => (
-              <Tr key={`${family}-${i}`}>
+            {customFonts.map(({ family, format, id }, i) => (
+              <Tr key={id}>
                 <Td>{family}</Td>
                 <Td>{format}</Td>
                 <Td isNumeric>
-                  <Button size="sm" colorScheme="red" variant="outline">
+                  <Button
+                    onClick={() => {
+                      setIdToDelete(id);
+                      onDeleteModalOpen();
+                    }}
+                    size="sm"
+                    colorScheme="red"
+                    variant="outline"
+                  >
                     Delete
                   </Button>
                 </Td>
@@ -225,7 +273,8 @@ const CustomFontsSetting = () => {
         </Table>
         {customFonts.length === 0 ? (
           <Text textAlign="center" mt="6">
-            You don&apos;t have any custom fonts yet
+            You don&apos;t have any custom fonts yet. Have problem with adding font? We only accept
+            woff or woff2 file format 😉
           </Text>
         ) : null}
       </Box>
