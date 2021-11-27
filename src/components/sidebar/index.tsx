@@ -121,6 +121,9 @@ const Sidebar = () => {
 
         if (!certificateInput[index]) certificateInput[index] = [];
 
+        // TODO add text width to wasm
+        // notes : font size not sync with wasm -> Zen Kurenaido
+
         certificateInput[index].push({
           y,
           text: val?.toString(),

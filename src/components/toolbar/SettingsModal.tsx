@@ -27,11 +27,14 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useAtom } from 'jotai';
-import { customFonts as customFontsAtom } from 'gstates';
+import { canvasObjects, customFonts as customFontsAtom } from 'gstates';
 import { encode } from 'base64-arraybuffer';
 import { fileToBase64 } from 'helpers/fileToBase64';
 import { v4 as uuid } from 'uuid';
 import { init, ttf2woff } from 'wasm-ttf2woff/dist/browser/ttf2woff';
+import { useAtomValue, useUpdateAtom } from 'jotai/utils';
+import { preventToolbar, preventCanvasShortcut } from 'gstates';
+import cloneDeep from 'clone-deep';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -39,13 +42,18 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, isOpen }) => {
+  const setPreventToolbar = useUpdateAtom(preventToolbar);
+  const setPreventCanvasShortcut = useUpdateAtom(preventCanvasShortcut);
   const [isActve, setActive] = useState<'custom-fonts' | 'about'>('custom-fonts');
 
   useEffect(() => {
     init('/wasm/ttf2woff.wasm');
   }, []);
 
-  // TODO prevent toolbar & prevent canvas shortcut
+  useEffect(() => {
+    setPreventToolbar(isOpen);
+    setPreventCanvasShortcut(isOpen);
+  }, [isOpen, setPreventCanvasShortcut, setPreventToolbar]);
 
   return (
     <Modal size="6xl" isCentered isOpen={isOpen} onClose={onClose}>
@@ -102,6 +110,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ isActive, children, onClick }
 
 const CustomFontsSetting = () => {
   const [customFonts, setCustomFonts] = useAtom(customFontsAtom);
+  const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [file, setFile] = useState<File>();
   const [fontName, setFontName] = useState<string>('');
   const [format, setFormat] = useState<CustomFont['format']>('ttf');
@@ -167,14 +176,27 @@ const CustomFontsSetting = () => {
 
   const handleDelete = () => {
     setCustomFonts((customFonts) => {
-      const font = customFonts.find((val) => val.id === idToDelete);
+      const newCustomFonts = cloneDeep(customFonts);
+      const font = newCustomFonts.find((val) => val.id === idToDelete);
       if (font) {
-        const indexOf = customFonts.indexOf(font);
-        customFonts.splice(indexOf, 1);
+        const indexOf = newCustomFonts.indexOf(font);
+        newCustomFonts.splice(indexOf, 1);
+        setCObjects((cObjects) => {
+          const newCObjects = cloneDeep(cObjects);
+          Object.keys(cObjects).map((key) => {
+            if (newCObjects[key].data.family === font.family) {
+              newCObjects[key].data.family = 'Roboto';
+              newCObjects[key].data.weight = '400';
+            }
+          });
+
+          return newCObjects;
+        });
       }
 
-      return customFonts;
+      return newCustomFonts;
     });
+
     onDeleteModalClose();
   };
 

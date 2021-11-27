@@ -1,4 +1,4 @@
-import React, { useMemo, memo } from 'react';
+import React, { useMemo, memo, useEffect } from 'react';
 import {
   Input,
   InputGroup,
@@ -15,6 +15,7 @@ import {
   canvasObjects,
   preventToolbar,
   customFonts as customFontsAtom,
+  preventCanvasShortcut,
 } from 'gstates';
 import { useAtom } from 'jotai';
 import { useQuery } from 'react-query';
@@ -23,6 +24,7 @@ import WebFont from 'webfontloader';
 import VirtualizedSelect from 'react-virtualized-select';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
 import { ColorPicker, useColor } from 'react-color-palette';
+import cloneDeep from 'clone-deep';
 
 const TextOption = () => {
   const [selected] = useAtom(selectedObject);
@@ -30,9 +32,8 @@ const TextOption = () => {
   const customFonts = useAtomValue(customFontsAtom);
   const [weightOptions, setWeightOptions] = useState<string[]>([]);
   const setPreventToolbar = useUpdateAtom(preventToolbar);
+  const setPreventCanvasShortcut = useUpdateAtom(preventCanvasShortcut);
   const [color, setColor] = useColor('hex', cObjects[selected]?.data?.color ?? '#000');
-
-  // TODO set font default if selected font was deleted
 
   const { data } = useMemo(() => cObjects[selected] ?? { data: {} }, [selected, cObjects]);
 
@@ -45,20 +46,21 @@ const TextOption = () => {
       const data = await res.json();
       const items: Array<CustomFont | GoogleFont> = [...data.items, ...customFonts];
 
-      if (selected) {
-        if (cObjects[selected]) {
-          const font = items?.find(({ family }) => family === cObjects[selected].data.family);
-          const weightOpt = font?.variants.filter((value) => !value.includes('italic'));
-
-          setWeightOptions(weightOpt ?? []);
-        }
-      }
-
       return items;
     },
     {
       keepPreviousData: true,
       initialData: [],
+      onSuccess: (items) => {
+        if (selected) {
+          if (cObjects[selected]) {
+            const font = items?.find(({ family }) => family === cObjects[selected].data.family);
+            const weightOpt = font?.variants.filter((value) => !value.includes('italic'));
+
+            setWeightOptions(weightOpt ?? []);
+          }
+        }
+      },
     }
   );
 
@@ -113,8 +115,6 @@ const TextOption = () => {
 
   if (!selected) return null;
 
-  // TODO prevent canvas shortcut virtualized select
-
   return (
     <>
       <Box px="4" py="3" borderBottom="1px solid" borderColor="gray.300">
@@ -134,9 +134,11 @@ const TextOption = () => {
             value={data.family}
             onFocus={() => {
               setPreventToolbar(true);
+              setPreventCanvasShortcut(true);
             }}
             onBlur={() => {
               setPreventToolbar(false);
+              setPreventCanvasShortcut(false);
             }}
             clearable={false}
           />
