@@ -438,6 +438,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
               color="white"
               fontSize="xs"
               width="max-content"
+              fontFamily="body"
             >
               {textData.width?.toFixed(0)} x {textData.height?.toFixed(0)}
             </Box>

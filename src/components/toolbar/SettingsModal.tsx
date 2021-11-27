@@ -95,6 +95,7 @@ const CustomFontsSetting = () => {
   const [customFonts, setCustomFonts] = useAtom(customFontsAtom);
   const [file, setFile] = useState<File>();
   const [fontName, setFontName] = useState<string>('');
+  const [format, setFormat] = useState<CustomFont['format']>('ttf');
   const { isOpen, onClose, onOpen } = useDisclosure();
   const toast = useToast();
 
@@ -103,9 +104,9 @@ const CustomFontsSetting = () => {
     const file = e.target.files[0];
     const format = file.name.split('.')[1];
 
-    if (!['ttf', 'woff', 'woff2', 'otf'].includes(format)) {
+    if (!['woff', 'woff2'].includes(format)) {
       toast({
-        title: 'Invalid file format. Only accept file with ttf, woff, woff2, otf format.',
+        title: 'Invalid file format. Only accept file with woff, woff2 format.',
         status: 'error',
         position: 'top',
         duration: 3000,
@@ -114,6 +115,7 @@ const CustomFontsSetting = () => {
 
     setFile(file);
     setFontName(file.name.split('.')[0]);
+    setFormat(format as CustomFont['format']);
     onOpen();
     // clear input file
     const htmlInput = document.getElementById('addCustomFont') as HTMLInputElement;
@@ -127,7 +129,14 @@ const CustomFontsSetting = () => {
 
     setCustomFonts([
       ...customFonts,
-      { family: fontName, variants: [], kind: 'custom', files: { default: base64 }, id: uuid() },
+      {
+        format,
+        family: fontName,
+        variants: [],
+        kind: 'custom',
+        files: { default: base64 },
+        id: uuid(),
+      },
     ]);
     onClose();
     toast({
@@ -177,7 +186,7 @@ const CustomFontsSetting = () => {
               type="file"
               id="addCustomFont"
               onChange={handleAddFile}
-              accept=".ttf,.woff,.woff2,.otf"
+              accept=".woff,.woff2"
             />
             <Button
               as="label"
@@ -196,15 +205,15 @@ const CustomFontsSetting = () => {
           <Thead>
             <Tr>
               <Th>Fonts</Th>
-              <Th>Type</Th>
+              <Th>Format</Th>
               <Th textAlign="right"></Th>
             </Tr>
           </Thead>
           <Tbody>
-            {customFonts.map(({ family }, i) => (
+            {customFonts.map(({ family, format }, i) => (
               <Tr key={`${family}-${i}`}>
                 <Td>{family}</Td>
-                <Td>Custom</Td>
+                <Td>{format}</Td>
                 <Td isNumeric>
                   <Button size="sm" colorScheme="red" variant="outline">
                     Delete

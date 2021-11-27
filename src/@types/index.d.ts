@@ -12,4 +12,4 @@ type Ruler = {
   height: number | string;
 };
 
-type CustomFont = GoogleFont & { id: string };
+type CustomFont = GoogleFont & { id: string; format: 'ttf' | 'woff' | 'woff2' | 'otf' };
