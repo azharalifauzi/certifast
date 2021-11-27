@@ -32,6 +32,8 @@ const TextOption = () => {
   const setPreventToolbar = useUpdateAtom(preventToolbar);
   const [color, setColor] = useColor('hex', cObjects[selected]?.data?.color ?? '#000');
 
+  // TODO set font default if selected font was deleted
+
   const { data } = useMemo(() => cObjects[selected] ?? { data: {} }, [selected, cObjects]);
 
   const { data: fontOptions } = useQuery<Array<CustomFont | GoogleFont>>(
@@ -76,7 +78,7 @@ const TextOption = () => {
             const newObj = { ...obj };
 
             newObj[selected].data.family = value;
-            newObj[selected].data.weight = 'default';
+            newObj[selected].data.weight = 'opentype';
             return newObj;
           });
         },
@@ -110,6 +112,8 @@ const TextOption = () => {
   };
 
   if (!selected) return null;
+
+  // TODO prevent canvas shortcut virtualized select
 
   return (
     <>

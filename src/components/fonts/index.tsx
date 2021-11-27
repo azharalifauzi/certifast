@@ -10,7 +10,7 @@ const Fonts = () => {
     return `
     @font-face {
       font-family: '${family}';
-      src: url('${files.default}') format('${format}');
+      src: url('${files.webfont}') format('woff');
     }
   `;
   });

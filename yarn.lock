@@ -3911,6 +3911,11 @@ warning@^4.0.3:
   dependencies:
     loose-envify "^1.0.0"
 
+wasm-ttf2woff@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/wasm-ttf2woff/-/wasm-ttf2woff-1.0.0.tgz#fdc95ea195bcaf2ab0fe6e8b8b7a79fbcaf60cb2"
+  integrity sha512-JS4Xk/3TswEXBORjSEaXXTyw+YqCfpg3Ri6Gj/tDimrCeRirealWTckpf010k7mQyOo4ucYBDXLKcSXfVPh/VA==
+
 webfontloader@^1.6.28:
   version "1.6.28"
   resolved "https://registry.yarnpkg.com/webfontloader/-/webfontloader-1.6.28.tgz#db786129253cb6e8eae54c2fb05f870af6675bae"

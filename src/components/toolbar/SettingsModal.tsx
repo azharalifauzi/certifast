@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Flex,
@@ -28,8 +28,10 @@ import {
 } from '@chakra-ui/react';
 import { useAtom } from 'jotai';
 import { customFonts as customFontsAtom } from 'gstates';
+import { encode } from 'base64-arraybuffer';
 import { fileToBase64 } from 'helpers/fileToBase64';
 import { v4 as uuid } from 'uuid';
+import { init, ttf2woff } from 'wasm-ttf2woff/dist/browser/ttf2woff';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -38,6 +40,12 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, isOpen }) => {
   const [isActve, setActive] = useState<'custom-fonts' | 'about'>('custom-fonts');
+
+  useEffect(() => {
+    init('/wasm/ttf2woff.wasm');
+  }, []);
+
+  // TODO prevent toolbar & prevent canvas shortcut
 
   return (
     <Modal size="6xl" isCentered isOpen={isOpen} onClose={onClose}>
@@ -111,9 +119,9 @@ const CustomFontsSetting = () => {
     const file = e.target.files[0];
     const format = file.name.split('.')[1];
 
-    if (!['woff', 'woff2'].includes(format)) {
+    if (!['otf', 'ttf'].includes(format)) {
       toast({
-        title: 'Invalid file format. Only accept file with woff, woff2 format.',
+        title: 'Invalid file format. Only accept file with otf, ttf format.',
         status: 'error',
         position: 'top',
         duration: 3000,
@@ -132,7 +140,10 @@ const CustomFontsSetting = () => {
   const handleAddFont = async () => {
     if (!fontName || !file) return;
 
-    const base64 = await fileToBase64(file);
+    const opentype = await fileToBase64(file);
+    const ttfu8 = await ttf2woff(new Uint8Array(await file.arrayBuffer()));
+    const blob = new Blob([ttfu8]);
+    const webfont = `data:application/octet-stream;base64,${encode(await blob.arrayBuffer())}`;
 
     setCustomFonts([
       ...customFonts,
@@ -141,7 +152,7 @@ const CustomFontsSetting = () => {
         family: fontName,
         variants: [],
         kind: 'custom',
-        files: { default: base64 },
+        files: { webfont, opentype },
         id: uuid(),
       },
     ]);
@@ -223,7 +234,7 @@ const CustomFontsSetting = () => {
               type="file"
               id="addCustomFont"
               onChange={handleAddFile}
-              accept=".woff,.woff2"
+              accept=".otf,.ttf"
             />
             <Button
               as="label"
@@ -240,7 +251,7 @@ const CustomFontsSetting = () => {
         </Flex>
         <Table variant="simple">
           {customFonts.length > 0 ? (
-            <TableCaption>Please upload only woff or woff2 file format only!</TableCaption>
+            <TableCaption>Please upload only otf or ttf file format only!</TableCaption>
           ) : null}
           <Thead>
             <Tr>
@@ -274,7 +285,7 @@ const CustomFontsSetting = () => {
         {customFonts.length === 0 ? (
           <Text textAlign="center" mt="6">
             You don&apos;t have any custom fonts yet. Have problem with adding font? We only accept
-            woff or woff2 file format 😉
+            otf or ttf file format 😉
           </Text>
         ) : null}
       </Box>
