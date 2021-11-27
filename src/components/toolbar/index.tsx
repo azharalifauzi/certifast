@@ -21,7 +21,7 @@ import {
 } from '@chakra-ui/react';
 import { useAtom } from 'jotai';
 import React from 'react';
-import { BsCursor, BsCursorText, BsExclamationCircle } from 'react-icons/bs';
+import { BsCursor, BsCursorText, BsExclamationCircle, BsGear } from 'react-icons/bs';
 import {
   activeToolbar as activeToolbarAtom,
   certifTemplate,
@@ -31,6 +31,7 @@ import {
 import { useEffect } from 'react';
 import { useAtomValue } from 'jotai/utils';
 import { useUndo } from 'hooks';
+import SettingsModal from './SettingsModal';
 
 const Toolbar = () => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
@@ -38,6 +39,11 @@ const Toolbar = () => {
   const preventToolbar = useAtomValue(preventToolbarAtom);
   const preventCanvasShortcut = useAtomValue(preventCanvasShortcutAtom);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isSettingsModalOpen,
+    onOpen: onOpenSettingsModal,
+    onClose: onCloseSettingsModal,
+  } = useDisclosure();
   const { undo, redo } = useUndo();
 
   useEffect(() => {
@@ -94,15 +100,19 @@ const Toolbar = () => {
 
   return (
     <>
+      <SettingsModal isOpen={isSettingsModalOpen} onClose={onCloseSettingsModal} />
       <AboutModal isOpen={isOpen} onClose={onClose} />
       <Box
-        background="gray.800"
-        top="0"
-        left="0"
+        background="white"
+        top="20%"
+        left="3"
         w="14"
-        height="100%"
+        height="auto"
         position="fixed"
         zIndex="100"
+        borderRadius="md"
+        overflow="hidden"
+        boxShadow="lg"
       >
         <Stack height="100%" spacing="0">
           <ToolbarItem
@@ -110,7 +120,7 @@ const Toolbar = () => {
             label="Move (V)"
             onClick={() => setActiveToolbar('move')}
           >
-            <BsCursor color="white" size="24" style={{ transform: 'rotate(-90deg)' }} />
+            <BsCursor color="black" size="24" style={{ transform: 'rotate(-90deg)' }} />
           </ToolbarItem>
           {certTemplate.file.length > 0 ? (
             <ToolbarItem
@@ -118,15 +128,18 @@ const Toolbar = () => {
               label="Dynamic Text (T)"
               onClick={() => setActiveToolbar('text')}
             >
-              <BsCursorText color="white" size="24" />
+              <BsCursorText color="black" size="24" />
             </ToolbarItem>
           ) : null}
+          <ToolbarItem label="Settings (S)" onClick={() => onOpenSettingsModal()}>
+            <BsGear color="black" size="24" />
+          </ToolbarItem>
           <Box mt="auto !important">
             <Popover offset={[-10, 5]} placement="right-end">
               <PopoverTrigger>
                 <Box>
                   <ToolbarItem label="About">
-                    <BsExclamationCircle color="white" size="24" />
+                    <BsExclamationCircle color="black" size="24" />
                   </ToolbarItem>
                 </Box>
               </PopoverTrigger>
@@ -183,13 +196,13 @@ const ToolbarItem: React.FC<ToolbarItemProps> = ({ label, isActive, children, on
     <Tooltip label={label} placement="right">
       <Flex
         style={style}
-        _hover={{ background: isActive ? undefined : 'black' }}
+        _hover={{ background: isActive ? undefined : 'blue.200' }}
         justifyContent="center"
         alignItems="center"
         as="button"
         h="14"
         w="14"
-        background={isActive ? 'blue.400' : undefined}
+        background={isActive ? 'blue.200' : undefined}
         onClick={onClick}
       >
         {children}

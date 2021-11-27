@@ -56,3 +56,4 @@ type Event = 'resize' | 'move' | 'pan' | 'select' | 'multiselect' | 'idle' | 'zo
 export const activeEvent = atom<Event>('idle');
 
 export const preventCanvasShortcut = atom<boolean>(false);
+export const customFonts = atomWithStorage<CustomFont[]>('customFonts', []);
