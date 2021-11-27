@@ -12,4 +12,4 @@ type Ruler = {
   height: number | string;
 };
 
-type CustomFont = GoogleFont;
+type CustomFont = GoogleFont & { id: string };
