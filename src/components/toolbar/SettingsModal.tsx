@@ -110,7 +110,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ isActive, children, onClick }
 
 const CustomFontsSetting = () => {
   const [customFonts, setCustomFonts] = useAtom(customFontsAtom);
-  const [cObjects, setCObjects] = useAtom(canvasObjects);
+  const setCObjects = useUpdateAtom(canvasObjects);
   const [file, setFile] = useState<File>();
   const [fontName, setFontName] = useState<string>('');
   const [format, setFormat] = useState<CustomFont['format']>('ttf');

@@ -18,9 +18,10 @@ import {
   isObjectMoving as isObjectMovingAtom,
   activeEvent,
   multiSelected,
+  newTextJustAddedID,
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
-import { atomWithStorage } from 'jotai/utils';
+import { atomWithStorage, useUpdateAtom } from 'jotai/utils';
 import { debounce } from 'helpers';
 import { useSelectionBox, useUndo } from 'hooks';
 import MultiSelectBox from './MultiSelectBox';
@@ -46,7 +47,7 @@ const Canvas = () => {
   const [mousePosRelativeToTemplate, setMousePosRelativeToTemplate] = useAtom(
     mousePosRelativeToTemplateAtom
   );
-  const [activeToolbar] = useAtom(activeToolbarAtom);
+  const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
   const [selected, setSelected] = useAtom(selectedObject);
   const [ctrlKey, setCtrlKey] = useAtom(ctrlKeyAtom);
   const [spaceKey, setSpaceKey] = useAtom(spaceKeyAtom);
@@ -56,6 +57,7 @@ const Canvas = () => {
   const [isObjectMoving, setObjectMoving] = useAtom(isObjectMovingAtom);
   const [event, setEvent] = useAtom(activeEvent);
   const [multiSelectedObj] = useAtom(multiSelected);
+  const setNewTextJustAddedID = useUpdateAtom(newTextJustAddedID);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
@@ -740,6 +742,7 @@ const Canvas = () => {
   };
 
   const handleAddObject = () => {
+    // TODO change the way add text like figma
     let count = 0;
     const newId = uuid();
 
@@ -766,6 +769,9 @@ const Canvas = () => {
           },
         },
       });
+      setNewTextJustAddedID(newId);
+      setActiveToolbar('move');
+      setSelected(newId);
     }
   };
 

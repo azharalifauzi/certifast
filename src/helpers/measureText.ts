@@ -8,6 +8,8 @@ export const measureText = (text: string, font: string, fontSize: number) => {
   lDiv.style.position = 'absolute';
   lDiv.style.left = '-1000px';
   lDiv.style.top = '-1000px';
+  lDiv.style.lineHeight = '1';
+  lDiv.style.width = 'max-content';
 
   lDiv.innerHTML = text;
 

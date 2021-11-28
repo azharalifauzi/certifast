@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "build:core": "cd core-certifast && wasm-pack build --target no-modules --out-dir ../public/abi"
   },
   "dependencies": {
     "@chakra-ui/react": "^1.6.5",

@@ -11,10 +11,11 @@ import {
   multiSelected,
   shiftKey as shiftKeyAtom,
   preventCanvasShortcut as preventCanvasShortcutAtom,
+  newTextJustAddedID as newTextJustAddedIDAtom,
 } from 'gstates';
 import { atom, useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
-import React, { useEffect, useState, memo, useRef } from 'react';
+import React, { useEffect, useState, memo, useRef, useCallback } from 'react';
 import { useMemo } from 'react';
 import { useMount, useMeasure, useClickAway } from 'react-use';
 import WebFont from 'webfontloader';
@@ -41,6 +42,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   const [, setEvent] = useAtom(activeEvent);
   const [multiSelectedObj, setMultiSelectedObj] = useAtom(multiSelected);
   const [, setMultiSelectMetaData] = useAtom(multiSelectMetaDataAtom);
+  const [newTextJustAddedID, setNewTextJustAddedID] = useAtom(newTextJustAddedIDAtom);
   const spaceKey = useAtomValue(spaceKeyAtom);
   const shiftKey = useAtomValue(shiftKeyAtom);
   const isWilLSnap = useAtomValue(willSnap);
@@ -84,6 +86,31 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
       },
     });
   });
+
+  const handleEdit = useCallback(() => {
+    setEditCache({
+      initHeight: height,
+      initWidth: width,
+      initText: textData.text,
+    });
+    setEdit(true);
+    setEditGlobal({ selectedId: id, value: true });
+    setEvent('textedit');
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(0, textData.text.length - 1);
+      inputRef.current?.select();
+    }, 100);
+  }, [height, id, width, textData.text, setEditGlobal, setEvent]);
+
+  useEffect(() => {
+    if (newTextJustAddedID === id) {
+      handleEdit();
+      setTimeout(() => {
+        setNewTextJustAddedID('');
+      }, 0);
+    }
+  }, [newTextJustAddedID, id, setSelected, handleEdit, setNewTextJustAddedID]);
 
   useEffect(() => {
     setCObjects((objects) => {
@@ -376,21 +403,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
         onMouseMove={() => {
           if (activeToolbar === 'move' && resize) setResize(false);
         }}
-        onDoubleClick={() => {
-          setEditCache({
-            initHeight: height,
-            initWidth: width,
-            initText: textData.text,
-          });
-          setEdit(true);
-          setEditGlobal({ selectedId: id, value: true });
-          setEvent('textedit');
-          setTimeout(() => {
-            inputRef.current?.focus();
-            inputRef.current?.setSelectionRange(0, textData.text.length - 1);
-            inputRef.current?.select();
-          }, 100);
-        }}
+        onDoubleClick={handleEdit}
       >
         {selected === id ? (
           <Box
@@ -419,7 +432,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
             onMouseMove={(e) => e.stopPropagation()}
           />
         ) : null}
-        {selected === id ? (
+        {selected === id && !newTextJustAddedID ? (
           <>
             <Box
               left={textData.align === 'left' ? '0' : textData.align === 'center' ? '50%' : '100%'}
