@@ -56,7 +56,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, isOpen }) => {
   }, [isOpen, setPreventCanvasShortcut, setPreventToolbar]);
 
   return (
-    <Modal size="6xl" isCentered isOpen={isOpen} onClose={onClose}>
+    <Modal trapFocus={false} size="6xl" isCentered isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent height="80%">
         <ModalHeader fontSize="md">Settings</ModalHeader>
@@ -76,6 +76,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ onClose, isOpen }) => {
             </Box>
             <Box px="3" pt="3" overflowY="auto">
               {isActve === 'custom-fonts' ? <CustomFontsSetting /> : null}
+              {isActve === 'about' ? <AboutSetting /> : null}
             </Box>
           </Grid>
         </ModalBody>
@@ -314,3 +315,18 @@ const CustomFontsSetting = () => {
     </>
   );
 };
+
+const AboutSetting = () => (
+  <Box>
+    <Text mb="1" fontWeight="bold">
+      App version:{' '}
+    </Text>
+    <Text mb="4">{import.meta.env.VITE_APP_VERSION}</Text>
+    <Text mb="1" fontWeight="bold">
+      Contact Support:{' '}
+    </Text>
+    <Text>
+      <a href="mailto:certifast.app@gmail.com">certifast.app@gmail.com</a>
+    </Text>
+  </Box>
+);
