@@ -40,6 +40,7 @@ import Loading from 'components/loading';
 import * as gtag from 'libs/gtag';
 import { supabase } from 'libs/supabase';
 import jsPDF from 'jspdf';
+import TutorialOption from './TutorialOption';
 
 const Sidebar = () => {
   const [certifTemplate, setCertifTemplate] = useAtom(certifTemplateAtom);
@@ -48,7 +49,7 @@ const Sidebar = () => {
   const dynamicTextInput = useAtomValue(dynamicTextInputAtom);
   const customFonts = useAtomValue(customFontsAtom);
   const [selected, setSelected] = useAtom(selectedObject);
-  const [active, setActive] = useState<'general' | 'input'>('general');
+  const [active, setActive] = useState<'general' | 'input' | 'tutorial'>('general');
   const [isProgressModalOpen, setIsProgressModalOpen] = useState<boolean>(false);
   const [confirmGenerateCert, setConfirmGenerateCert] = useState<boolean>(false);
   const [confirmResetProject, setConfirmResetProject] = useState<boolean>(false);
@@ -424,7 +425,7 @@ const Sidebar = () => {
       >
         <Grid
           gridAutoColumns="max-content"
-          gap="3"
+          gap="5"
           px="4"
           py="3"
           gridAutoFlow="column"
@@ -452,6 +453,14 @@ const Sidebar = () => {
             color={active === 'input' ? 'black' : 'gray.400'}
           >
             Input
+          </GridItem>
+          <GridItem
+            userSelect="none"
+            onClick={() => setActive('tutorial')}
+            _hover={{ color: 'black' }}
+            color={active === 'tutorial' ? 'black' : 'gray.400'}
+          >
+            Tutorial
           </GridItem>
         </Grid>
         {active === 'general' ? (
@@ -504,6 +513,7 @@ const Sidebar = () => {
             )}
           </>
         ) : null}
+        {active === 'tutorial' ? <TutorialOption /> : null}
       </Box>
     </>
   );
