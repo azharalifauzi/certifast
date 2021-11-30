@@ -742,7 +742,6 @@ const Canvas = () => {
   };
 
   const handleAddObject = () => {
-    // TODO change the way add text like figma
     let count = 0;
     const newId = uuid();
 

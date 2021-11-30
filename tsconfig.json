@@ -15,7 +15,6 @@
     "noEmit": true,
     "jsx": "react",
     "baseUrl": "./src",
-    "types": [ "@honkhonk/vite-plugin-svgr/client" ]
   },
   "include": ["./src"]
 }
