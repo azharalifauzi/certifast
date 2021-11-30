@@ -4,3 +4,4 @@ export { default as Sidebar } from './sidebar';
 export { default as SidebarTextOption } from './sidebar/text-option';
 export { default as Toolbar } from './toolbar';
 export { default as Loading } from './loading';
+export { default as Fonts } from './fonts';

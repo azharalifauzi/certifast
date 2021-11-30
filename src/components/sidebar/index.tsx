@@ -26,6 +26,7 @@ import {
   certifTemplate as certifTemplateAtom,
   dynamicTextInput as dynamicTextInputAtom,
   selectedObject,
+  customFonts as customFontsAtom,
 } from 'gstates';
 import TextOption from './text-option';
 import { useAtom } from 'jotai';
@@ -45,6 +46,7 @@ const Sidebar = () => {
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [zoom, setZoom] = useAtom(zoomCanvas);
   const dynamicTextInput = useAtomValue(dynamicTextInputAtom);
+  const customFonts = useAtomValue(customFontsAtom);
   const [selected, setSelected] = useAtom(selectedObject);
   const [active, setActive] = useState<'general' | 'input'>('general');
   const [isProgressModalOpen, setIsProgressModalOpen] = useState<boolean>(false);
@@ -65,12 +67,12 @@ const Sidebar = () => {
     const dynamicTextData = Object.values(cObjects);
     const certificateInput: any[][] = [];
 
-    const arrayOfFonts = async (): Promise<GoogleFont[]> => {
+    const arrayOfFonts = async (): Promise<Array<GoogleFont | CustomFont>> => {
       const apiKey = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
       const res = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`);
 
       const data = await res.json();
-      const items: GoogleFont[] = data.items;
+      const items: Array<GoogleFont | CustomFont> = [...data.items, ...customFonts];
 
       return items;
     };
@@ -90,9 +92,16 @@ const Sidebar = () => {
       if (fontWeight === '400') fontWeight = 'regular';
       let fontFileUrl = font?.files[fontWeight];
       if (import.meta.env.PROD) fontFileUrl = fontFileUrl?.replace('http', 'https');
-      const fontFile = await fetch(fontFileUrl ?? '');
-      const fontArrayBuff = await fontFile.arrayBuffer();
-      const fontBase64 = encode(fontArrayBuff);
+
+      let fontBase64: string;
+
+      if (font?.kind === 'custom' && font.files) {
+        fontBase64 = font.files[fontWeight].split(',')[1];
+      } else {
+        const fontFile = await fetch(fontFileUrl ?? '');
+        const fontArrayBuff = await fontFile.arrayBuffer();
+        fontBase64 = encode(fontArrayBuff);
+      }
 
       inputs?.forEach((val, index) => {
         const textWidth = measureText(val, data.family, data.size).width;
@@ -111,6 +120,9 @@ const Sidebar = () => {
         const y = data.y / zoom;
 
         if (!certificateInput[index]) certificateInput[index] = [];
+
+        // FIXME text not sync
+        // notes : font size not sync with wasm -> Zen Kurenaido
 
         certificateInput[index].push({
           y,

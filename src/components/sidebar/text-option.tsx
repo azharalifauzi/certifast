@@ -1,4 +1,4 @@
-import React, { useMemo, memo } from 'react';
+import React, { useMemo, memo, useEffect } from 'react';
 import {
   Input,
   InputGroup,
@@ -10,46 +10,57 @@ import {
   Grid,
   Text,
 } from '@chakra-ui/react';
-import { selectedObject, canvasObjects, preventToolbar } from 'gstates';
+import {
+  selectedObject,
+  canvasObjects,
+  preventToolbar,
+  customFonts as customFontsAtom,
+  preventCanvasShortcut,
+} from 'gstates';
 import { useAtom } from 'jotai';
 import { useQuery } from 'react-query';
 import { useState } from 'react';
 import WebFont from 'webfontloader';
 import VirtualizedSelect from 'react-virtualized-select';
-import { useUpdateAtom } from 'jotai/utils';
+import { useAtomValue, useUpdateAtom } from 'jotai/utils';
 import { ColorPicker, useColor } from 'react-color-palette';
+import cloneDeep from 'clone-deep';
 
 const TextOption = () => {
   const [selected] = useAtom(selectedObject);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
+  const customFonts = useAtomValue(customFontsAtom);
   const [weightOptions, setWeightOptions] = useState<string[]>([]);
   const setPreventToolbar = useUpdateAtom(preventToolbar);
+  const setPreventCanvasShortcut = useUpdateAtom(preventCanvasShortcut);
   const [color, setColor] = useColor('hex', cObjects[selected]?.data?.color ?? '#000');
 
   const { data } = useMemo(() => cObjects[selected] ?? { data: {} }, [selected, cObjects]);
 
-  const { data: fontOptions } = useQuery<GoogleFont[]>(
-    ['fonts', selected],
+  const { data: fontOptions } = useQuery<Array<CustomFont | GoogleFont>>(
+    ['fonts', selected, customFonts],
     async () => {
       const apiKey = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
       const res = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`);
 
       const data = await res.json();
-      const items: GoogleFont[] = data.items;
-
-      if (selected) {
-        if (cObjects[selected]) {
-          const font = items?.find(({ family }) => family === cObjects[selected].data.family);
-          const weightOpt = font?.variants.filter((value) => !value.includes('italic'));
-
-          setWeightOptions(weightOpt ?? []);
-        }
-      }
+      const items: Array<CustomFont | GoogleFont> = [...data.items, ...customFonts];
 
       return items;
     },
     {
       keepPreviousData: true,
+      initialData: [],
+      onSuccess: (items) => {
+        if (selected) {
+          if (cObjects[selected]) {
+            const font = items?.find(({ family }) => family === cObjects[selected].data.family);
+            const weightOpt = font?.variants.filter((value) => !value.includes('italic'));
+
+            setWeightOptions(weightOpt ?? []);
+          }
+        }
+      },
     }
   );
 
@@ -57,22 +68,40 @@ const TextOption = () => {
     const font = fontOptions?.find(({ family }) => family === value);
     const weightOpt = font?.variants.filter((value) => !value.includes('italic'));
 
-    WebFont.load({
-      google: {
-        families: [value],
-      },
-      active: () => {
-        setCObjects((obj) => {
-          const newObj = { ...obj };
+    if (font?.kind === 'custom') {
+      setWeightOptions([]);
 
-          newObj[selected].data.family = value;
-          newObj[selected].data.weight = '400';
-          return newObj;
-        });
-      },
-    });
+      WebFont.load({
+        custom: {
+          families: [font.family],
+        },
+        active: () => {
+          setCObjects((obj) => {
+            const newObj = { ...obj };
 
-    setWeightOptions(weightOpt ?? []);
+            newObj[selected].data.family = value;
+            newObj[selected].data.weight = 'opentype';
+            return newObj;
+          });
+        },
+      });
+    } else {
+      WebFont.load({
+        google: {
+          families: [value],
+        },
+        active: () => {
+          setCObjects((obj) => {
+            const newObj = { ...obj };
+
+            newObj[selected].data.family = value;
+            newObj[selected].data.weight = '400';
+            return newObj;
+          });
+        },
+      });
+      setWeightOptions(weightOpt ?? []);
+    }
   };
 
   const handleChangeFontWeight = (value: string) => {
@@ -94,7 +123,10 @@ const TextOption = () => {
         </Text>
         <Stack spacing="3">
           <VirtualizedSelect
-            options={fontOptions?.map(({ family }) => ({ label: family, value: family }))}
+            options={fontOptions?.map(({ family }) => ({
+              label: family,
+              value: family,
+            }))}
             // @ts-ignore
             onChange={({ value }) => {
               handleChangeFont(value);
@@ -102,9 +134,11 @@ const TextOption = () => {
             value={data.family}
             onFocus={() => {
               setPreventToolbar(true);
+              setPreventCanvasShortcut(true);
             }}
             onBlur={() => {
               setPreventToolbar(false);
+              setPreventCanvasShortcut(false);
             }}
             clearable={false}
           />
@@ -122,6 +156,7 @@ const TextOption = () => {
               searchable={false}
               placeholder="Weight"
               clearable={false}
+              disabled={weightOptions.length === 0}
             />
             <Input
               type="number"

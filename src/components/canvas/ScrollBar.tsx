@@ -36,7 +36,7 @@ const ScrollBar: React.FC<ScrollBarProps> = ({ windowH, windowW, canvasH, canvas
   useEffect(() => {
     if (!triggerMoveX) {
       const movement = left * -1;
-      const ratio = (scrollBarWidth - windowW + 344) / (windowW - canvasW);
+      const ratio = (scrollBarWidth - windowW + 288) / (windowW - canvasW);
       const newX = movement * ratio;
       setTranslateX(newX);
     }
@@ -54,8 +54,8 @@ const ScrollBar: React.FC<ScrollBarProps> = ({ windowH, windowW, canvasH, canvas
       setTop(ratio * newY);
     }
 
-    if (triggerMoveX && newX >= 0 && newX <= windowW - scrollBarWidth - 344) {
-      const ratio = -(windowW - canvasW) / (scrollBarWidth - windowW + 344);
+    if (triggerMoveX && newX >= 0 && newX <= windowW - scrollBarWidth - 288) {
+      const ratio = -(windowW - canvasW) / (scrollBarWidth - windowW + 288);
 
       setTranslateX(newX);
       setLeft(ratio * newX);
@@ -74,7 +74,6 @@ const ScrollBar: React.FC<ScrollBarProps> = ({ windowH, windowW, canvasH, canvas
         userSelect="none"
         position="fixed"
         bottom="2"
-        left="14"
         height="2"
         borderRadius="10px"
         zIndex="100"
