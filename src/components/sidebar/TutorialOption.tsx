@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Text, Flex } from '@chakra-ui/react';
+import { Box, Button, Text, Flex, Grid } from '@chakra-ui/react';
 import { BsArrowLeft, BsX } from 'react-icons/bs';
+import { HiOutlineDocumentDuplicate } from 'react-icons/hi';
 import './tutorial-option.css';
 
 type Tutorial = {
@@ -48,7 +49,6 @@ const TutorialOption = () => {
   return (
     <Box>
       <TutorialPopup data={testTutorial} />
-
       <Box
         id="test-trigger"
         position="fixed"
@@ -59,6 +59,16 @@ const TutorialOption = () => {
       >
         <BsArrowLeft color="#00509D" size="32" />
       </Box>
+      <TutorialItem
+        Icon={<HiOutlineDocumentDuplicate size="32" />}
+        title="Generate Many Certificates"
+        description="The most basic way to create many certificates in no time."
+      />
+      <TutorialItem
+        Icon={<HiOutlineDocumentDuplicate size="32" />}
+        title="Generate Many Certificates"
+        description="The most basic way to create many certificates in no time."
+      />
     </Box>
   );
 };
@@ -135,5 +145,36 @@ const TutorialPopup: React.FC<TutorialPopupProps> = ({ data, onClose, onFinish }
         </Button>
       </Flex>
     </Box>
+  );
+};
+
+interface TutorialItemProps {
+  title?: string;
+  description?: string;
+  Icon?: React.ReactNode;
+  onClick?: () => void;
+}
+
+const TutorialItem: React.FC<TutorialItemProps> = ({ title, description, Icon, onClick }) => {
+  return (
+    <Grid
+      gridTemplateColumns="48px 1fr"
+      _hover={{ background: 'blackAlpha.200' }}
+      minH="24"
+      cursor="pointer"
+      p="3"
+      alignItems="center"
+      borderBottom="1px solid"
+      borderColor="blackAlpha.300"
+      onClick={onClick}
+    >
+      <Box>{Icon}</Box>
+      <Box>
+        <Text fontSize="md" fontWeight="semibold" mb="1">
+          {title}
+        </Text>
+        <Text color="blackAlpha.700">{description}</Text>
+      </Box>
+    </Grid>
   );
 };
