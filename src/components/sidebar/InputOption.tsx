@@ -9,6 +9,8 @@ import {
   PopoverContent,
   PopoverHeader,
   PopoverTrigger,
+  PopoverArrow,
+  PopoverFooter,
   Portal,
   Text,
   useToast,
@@ -34,6 +36,7 @@ import {
   dynamicTextInput,
   preventToolbar as preventToolbarAtom,
   preventCanvasShortcut as preventCanvasShortcutAtom,
+  updateV1Atom,
 } from 'gstates';
 import { useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
@@ -46,7 +49,7 @@ import { useMeasure } from 'react-use';
 import cloneDeep from 'clone-deep';
 
 const InputOption = () => {
-  const cObjects = useAtomValue(canvasObjects);
+  const [updateV1, setUpdateV1] = useAtom(updateV1Atom);
   const setPreventToolbar = useUpdateAtom(preventToolbarAtom);
   const setPreventCanvasShortcut = useUpdateAtom(preventCanvasShortcutAtom);
   const { isOpen, onClose, onOpen } = useDisclosure();
@@ -63,19 +66,49 @@ const InputOption = () => {
       />
       <Box h="calc(100% - 45.8px)" overflowY="auto">
         <Box p="4">
-          <Button
-            onClick={() => {
-              setPreventToolbar(true);
-              setPreventCanvasShortcut(true);
-              onOpen();
-            }}
-            w="100%"
-            size="sm"
-            variant="outline"
-            colorScheme="whatsapp"
+          <Popover
+            isOpen={updateV1.manageInputPopover}
+            onClose={() => setUpdateV1({ ...updateV1, manageInputPopover: false })}
+            placement="bottom"
+            offset={[-30, 15]}
+            closeOnBlur={false}
           >
-            Manage Input
-          </Button>
+            <PopoverTrigger>
+              <Button
+                onClick={() => {
+                  setPreventToolbar(true);
+                  setPreventCanvasShortcut(true);
+                  onOpen();
+                }}
+                w="100%"
+                size="sm"
+                variant="outline"
+                colorScheme="whatsapp"
+              >
+                Manage Input
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent bg="whatsapp.500" color="white">
+              <PopoverArrow bg="whatsapp.500" />
+              <PopoverHeader fontWeight="semibold">New way managing input</PopoverHeader>
+              <PopoverBody>
+                We have a new way to manage input. Feel the experience editing in spreadsheet. Try
+                it!
+              </PopoverBody>
+              <PopoverFooter border="none" display="flex" justifyContent="flex-end" mt="4">
+                <Button
+                  onClick={() => setUpdateV1({ ...updateV1, manageInputPopover: false })}
+                  size="sm"
+                  colorScheme="white"
+                  bg="white"
+                  color="whatsapp.500"
+                  px="6"
+                >
+                  Oke
+                </Button>
+              </PopoverFooter>
+            </PopoverContent>
+          </Popover>
         </Box>
         {/* {Object.values(cObjects).map(({ type, data }) => {
           if (type === 'text') {
