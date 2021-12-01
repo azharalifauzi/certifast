@@ -1,5 +1,5 @@
 import React from 'react';
-import { Canvas, Fonts, Sidebar, Toolbar } from 'components';
+import { Canvas, Fonts, Sidebar, Toolbar, WhatsNew } from 'components';
 import './App.css';
 import { useAtom } from 'jotai';
 import { certifTemplate } from 'gstates';
@@ -74,6 +74,7 @@ function App() {
 
   return (
     <>
+      <WhatsNew />
       <Fonts />
       {isMobile ? (
         <Flex flexDir="column" px="6" h={height} justifyContent="center" alignItems="center">
