@@ -28,9 +28,9 @@ import {
   selectedObject,
   customFonts as customFontsAtom,
 } from 'gstates';
-import TextOption from './text-option';
+import TextOption from './TextOption';
 import { useAtom } from 'jotai';
-import InputOption from './input-option';
+import InputOption from './InputOption';
 import { zoomCanvas } from 'components/canvas';
 import { decode, encode } from 'base64-arraybuffer';
 import { measureText } from 'helpers';
@@ -41,6 +41,7 @@ import * as gtag from 'libs/gtag';
 import { supabase } from 'libs/supabase';
 import jsPDF from 'jspdf';
 import TutorialOption from './TutorialOption';
+import TutorialWrapper from './TutorialWrapper';
 
 const Sidebar = () => {
   const [certifTemplate, setCertifTemplate] = useAtom(certifTemplateAtom);
@@ -299,6 +300,7 @@ const Sidebar = () => {
 
   return (
     <>
+      <TutorialWrapper />
       <Modal
         closeOnEsc={false}
         closeOnOverlayClick={false}

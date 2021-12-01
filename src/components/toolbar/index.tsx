@@ -13,6 +13,7 @@ import { useAtomValue } from 'jotai/utils';
 import { useUndo } from 'hooks';
 import { LogoCertifastFull } from 'assets';
 import SettingsModal from './SettingsModal';
+import { COMPONENT_ID } from 'helpers';
 
 const Toolbar = () => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
@@ -142,12 +143,16 @@ const Toolbar = () => {
               isActive={activeToolbar === 'text'}
               label="Dynamic Text (T)"
               onClick={() => setActiveToolbar('text')}
-              id="test-dynamic-text"
+              id={COMPONENT_ID.DYNAMIC_TEXT}
             >
               <BsCursorText color="black" size="24" />
             </ToolbarItem>
           ) : null}
-          <ToolbarItem label="Settings (S)" onClick={() => onOpenSettingsModal()}>
+          <ToolbarItem
+            id={COMPONENT_ID.SETTINGS}
+            label="Settings (S)"
+            onClick={() => onOpenSettingsModal()}
+          >
             <BsGear color="black" size="24" />
           </ToolbarItem>
         </Stack>
