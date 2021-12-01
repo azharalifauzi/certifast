@@ -13,6 +13,7 @@ import { useAtomValue } from 'jotai/utils';
 import { useUndo } from 'hooks';
 import { LogoCertifastFull } from 'assets';
 import SettingsModal from './SettingsModal';
+import { COMPONENT_ID } from 'helpers';
 
 const Toolbar = () => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
@@ -142,11 +143,16 @@ const Toolbar = () => {
               isActive={activeToolbar === 'text'}
               label="Dynamic Text (T)"
               onClick={() => setActiveToolbar('text')}
+              id={COMPONENT_ID.DYNAMIC_TEXT}
             >
               <BsCursorText color="black" size="24" />
             </ToolbarItem>
           ) : null}
-          <ToolbarItem label="Settings (S)" onClick={() => onOpenSettingsModal()}>
+          <ToolbarItem
+            id={COMPONENT_ID.SETTINGS}
+            label="Settings (S)"
+            onClick={() => onOpenSettingsModal()}
+          >
             <BsGear color="black" size="24" />
           </ToolbarItem>
         </Stack>
@@ -162,15 +168,20 @@ interface ToolbarItemProps {
   isActive?: boolean;
   onClick?(): void;
   style?: React.CSSProperties;
+  id?: string;
 }
 
 // eslint-disable-next-line react/display-name
-const ToolbarItem: React.FC<ToolbarItemProps> = (
-  { label, isActive, children, onClick, style },
-  ref
-) => {
+const ToolbarItem: React.FC<ToolbarItemProps> = ({
+  label,
+  isActive,
+  children,
+  onClick,
+  style,
+  id,
+}) => {
   return (
-    <Tooltip ref={ref} openDelay={500} label={label} placement="right">
+    <Tooltip closeOnMouseDown openDelay={500} label={label} placement="right">
       <Flex
         style={style}
         _hover={{ background: isActive ? undefined : 'blue.200' }}
@@ -181,6 +192,7 @@ const ToolbarItem: React.FC<ToolbarItemProps> = (
         w="14"
         background={isActive ? 'blue.200' : undefined}
         onClick={onClick}
+        id={id}
       >
         {children}
       </Flex>

@@ -28,9 +28,9 @@ import {
   selectedObject,
   customFonts as customFontsAtom,
 } from 'gstates';
-import TextOption from './text-option';
+import TextOption from './TextOption';
 import { useAtom } from 'jotai';
-import InputOption from './input-option';
+import InputOption from './InputOption';
 import { zoomCanvas } from 'components/canvas';
 import { decode, encode } from 'base64-arraybuffer';
 import { measureText } from 'helpers';
@@ -40,15 +40,17 @@ import Loading from 'components/loading';
 import * as gtag from 'libs/gtag';
 import { supabase } from 'libs/supabase';
 import jsPDF from 'jspdf';
+import TutorialOption from './TutorialOption';
+import TutorialWrapper from './TutorialWrapper';
 
 const Sidebar = () => {
   const [certifTemplate, setCertifTemplate] = useAtom(certifTemplateAtom);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [zoom, setZoom] = useAtom(zoomCanvas);
-  const dynamicTextInput = useAtomValue(dynamicTextInputAtom);
+  const [dynamicTextInput, setDynamicTextInput] = useAtom(dynamicTextInputAtom);
   const customFonts = useAtomValue(customFontsAtom);
   const [selected, setSelected] = useAtom(selectedObject);
-  const [active, setActive] = useState<'general' | 'input'>('general');
+  const [active, setActive] = useState<'general' | 'input' | 'tutorial'>('general');
   const [isProgressModalOpen, setIsProgressModalOpen] = useState<boolean>(false);
   const [confirmGenerateCert, setConfirmGenerateCert] = useState<boolean>(false);
   const [confirmResetProject, setConfirmResetProject] = useState<boolean>(false);
@@ -293,11 +295,13 @@ const Sidebar = () => {
       file: '',
     });
     setSelected('');
+    setDynamicTextInput({});
     setZoom(1.0);
   };
 
   return (
     <>
+      <TutorialWrapper />
       <Modal
         closeOnEsc={false}
         closeOnOverlayClick={false}
@@ -424,35 +428,30 @@ const Sidebar = () => {
       >
         <Grid
           gridAutoColumns="max-content"
-          gap="3"
+          gap="5"
           px="4"
-          py="3"
           gridAutoFlow="column"
           fontWeight="semibold"
           borderBottom="1px solid"
           borderColor="gray.300"
         >
-          <GridItem
-            userSelect="none"
-            onClick={() => setActive('general')}
-            _hover={{ color: 'black' }}
-            color={active === 'general' ? 'black' : 'gray.400'}
-          >
+          <SideBarNav onClick={() => setActive('general')} isActive={active === 'general'}>
             General
-          </GridItem>
-          <GridItem
-            userSelect="none"
+          </SideBarNav>
+          <SideBarNav
             onClick={() => {
               setActive('input');
               if (Object.keys(cObjects).length > 0) {
                 gtag.event({ action: 'manage_input', label: '', category: 'engagement', value: 0 });
               }
             }}
-            _hover={{ color: 'black' }}
-            color={active === 'input' ? 'black' : 'gray.400'}
+            isActive={active === 'input'}
           >
             Input
-          </GridItem>
+          </SideBarNav>
+          <SideBarNav onClick={() => setActive('tutorial')} isActive={active === 'tutorial'}>
+            Tutorial
+          </SideBarNav>
         </Grid>
         {active === 'general' ? (
           <>
@@ -504,12 +503,34 @@ const Sidebar = () => {
             )}
           </>
         ) : null}
+        {active === 'tutorial' ? <TutorialOption /> : null}
       </Box>
     </>
   );
 };
 
 export default memo(Sidebar);
+
+interface SidebarNavProps {
+  onClick?: () => void;
+  isActive?: boolean;
+}
+
+const SideBarNav: React.FC<SidebarNavProps> = ({ onClick, isActive, children }) => {
+  return (
+    <GridItem
+      userSelect="none"
+      onClick={onClick}
+      _hover={{ color: 'black' }}
+      color={isActive ? 'black' : 'gray.400'}
+      borderBottom="2px solid"
+      borderColor={isActive ? 'blue.400' : 'transparent'}
+      py="4"
+    >
+      {children}
+    </GridItem>
+  );
+};
 
 interface ResetModalProps {
   isOpen: boolean;
