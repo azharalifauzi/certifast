@@ -88,7 +88,7 @@ function App() {
           {template.file.length > 0 ? (
             <Canvas />
           ) : (
-            <Box background="gray.100" position="fixed" top="0" bottom="0" right="72" left="14">
+            <Box background="gray.100" position="fixed" top="0" bottom="0" right="72" left="0">
               <FileDrop onDrop={handleFileDrop}>
                 <Flex justifyContent="center" alignItems="center" flexDir="column" height="100%">
                   <Box mb="2">

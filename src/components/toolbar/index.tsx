@@ -181,7 +181,7 @@ const ToolbarItem: React.FC<ToolbarItemProps> = ({
   id,
 }) => {
   return (
-    <Tooltip openDelay={500} label={label} placement="right">
+    <Tooltip closeOnMouseDown openDelay={500} label={label} placement="right">
       <Flex
         style={style}
         _hover={{ background: isActive ? undefined : 'blue.200' }}

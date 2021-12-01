@@ -47,7 +47,7 @@ const Sidebar = () => {
   const [certifTemplate, setCertifTemplate] = useAtom(certifTemplateAtom);
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [zoom, setZoom] = useAtom(zoomCanvas);
-  const dynamicTextInput = useAtomValue(dynamicTextInputAtom);
+  const [dynamicTextInput, setDynamicTextInput] = useAtom(dynamicTextInputAtom);
   const customFonts = useAtomValue(customFontsAtom);
   const [selected, setSelected] = useAtom(selectedObject);
   const [active, setActive] = useState<'general' | 'input' | 'tutorial'>('general');
@@ -295,6 +295,7 @@ const Sidebar = () => {
       file: '',
     });
     setSelected('');
+    setDynamicTextInput({});
     setZoom(1.0);
   };
 
@@ -429,41 +430,28 @@ const Sidebar = () => {
           gridAutoColumns="max-content"
           gap="5"
           px="4"
-          py="3"
           gridAutoFlow="column"
           fontWeight="semibold"
           borderBottom="1px solid"
           borderColor="gray.300"
         >
-          <GridItem
-            userSelect="none"
-            onClick={() => setActive('general')}
-            _hover={{ color: 'black' }}
-            color={active === 'general' ? 'black' : 'gray.400'}
-          >
+          <SideBarNav onClick={() => setActive('general')} isActive={active === 'general'}>
             General
-          </GridItem>
-          <GridItem
-            userSelect="none"
+          </SideBarNav>
+          <SideBarNav
             onClick={() => {
               setActive('input');
               if (Object.keys(cObjects).length > 0) {
                 gtag.event({ action: 'manage_input', label: '', category: 'engagement', value: 0 });
               }
             }}
-            _hover={{ color: 'black' }}
-            color={active === 'input' ? 'black' : 'gray.400'}
+            isActive={active === 'input'}
           >
             Input
-          </GridItem>
-          <GridItem
-            userSelect="none"
-            onClick={() => setActive('tutorial')}
-            _hover={{ color: 'black' }}
-            color={active === 'tutorial' ? 'black' : 'gray.400'}
-          >
+          </SideBarNav>
+          <SideBarNav onClick={() => setActive('tutorial')} isActive={active === 'tutorial'}>
             Tutorial
-          </GridItem>
+          </SideBarNav>
         </Grid>
         {active === 'general' ? (
           <>
@@ -522,6 +510,27 @@ const Sidebar = () => {
 };
 
 export default memo(Sidebar);
+
+interface SidebarNavProps {
+  onClick?: () => void;
+  isActive?: boolean;
+}
+
+const SideBarNav: React.FC<SidebarNavProps> = ({ onClick, isActive, children }) => {
+  return (
+    <GridItem
+      userSelect="none"
+      onClick={onClick}
+      _hover={{ color: 'black' }}
+      color={isActive ? 'black' : 'gray.400'}
+      borderBottom="2px solid"
+      borderColor={isActive ? 'blue.400' : 'transparent'}
+      py="4"
+    >
+      {children}
+    </GridItem>
+  );
+};
 
 interface ResetModalProps {
   isOpen: boolean;
