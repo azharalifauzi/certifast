@@ -58,3 +58,8 @@ export const activeEvent = atom<Event>('idle');
 export const preventCanvasShortcut = atom<boolean>(false);
 export const customFonts = atomWithStorage<CustomFont[]>('customFonts', []);
 export const newTextJustAddedID = atom<string>('');
+
+export const updateV1Atom = atomWithStorage('CERTIFAST_V1.0', {
+  whatsnew: true,
+  manageInputPopover: true,
+});

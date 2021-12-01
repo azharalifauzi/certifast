@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Text, UnorderedList, ListItem } from '@chakra-ui/react';
+import { Box, Text, UnorderedList, ListItem, AspectRatio } from '@chakra-ui/react';
 
 type WhatsNewData = {
   title?: string;
@@ -18,14 +18,17 @@ export const whatsNewData: WhatsNewData[] = [
           aliquid at, eligendi reprehenderit, neque consectetur perspiciatis esse numquam quasi
           soluta minima inventore illo. Doloribus provident magni architecto!
         </Text>
-        <UnorderedList pl="4">
+        <UnorderedList pl="4" mb="6">
           <ListItem>New UI, hope you like it 😉.</ListItem>
           <ListItem>
-            New way manage input. Now you have spreadsheet experience when editing your inputs.
+            New way to manage input. Now you have spreadsheet experience when editing your inputs.
           </ListItem>
           <ListItem>Adding a tutorials, so you won&apos;t get lost.</ListItem>
           <ListItem>Feature you want it so bad. Export PDF yaaay 🎉.</ListItem>
         </UnorderedList>
+        <AspectRatio ratio={4 / 3}>
+          <Box background="blackAlpha.400" h="100%" />
+        </AspectRatio>
       </Box>
     ),
   },
