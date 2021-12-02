@@ -22,7 +22,7 @@ import {
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage, useUpdateAtom } from 'jotai/utils';
-import { debounce } from 'helpers';
+import { debounce, SIDEBAR_WIDTH } from 'helpers';
 import { useSelectionBox, useUndo } from 'hooks';
 import MultiSelectBox from './MultiSelectBox';
 import ScrollBar from './ScrollBar';
@@ -786,7 +786,7 @@ const Canvas = () => {
       <Flex
         background="gray.100"
         height={height}
-        w="calc(100% - 320px)"
+        w={`calc(100% - ${SIDEBAR_WIDTH}px)`}
         justifyContent="center"
         alignItems="center"
       >

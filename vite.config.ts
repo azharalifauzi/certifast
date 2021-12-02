@@ -20,5 +20,16 @@ export default defineConfig(({ mode }) => {
         },
       }),
     ],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            react: ['node_modules/react/index.js', 'node_modules/react-dom/index.js'],
+            chakra: ['node_modules/@chakra-ui/react/dist/esm/index.js'],
+            jsPdf: ['node_modules/jspdf/dist/jspdf.es.min.js'],
+          },
+        },
+      },
+    },
   };
 });
