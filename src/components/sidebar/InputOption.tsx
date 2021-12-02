@@ -15,6 +15,15 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
+  Badge,
+  ModalFooter,
+  useToast,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
 } from '@chakra-ui/react';
 import {
   canvasObjects,
@@ -23,9 +32,9 @@ import {
   preventCanvasShortcut as preventCanvasShortcutAtom,
   updateV1Atom,
 } from 'gstates';
-import { useAtom } from 'jotai';
+import { atom, useAtom } from 'jotai';
 import { useAtomValue, useUpdateAtom } from 'jotai/utils';
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect, useRef } from 'react';
 import { textColumn, DataSheetGrid, keyColumn, Column } from 'react-datasheet-grid';
 import { useMeasure } from 'react-use';
 import cloneDeep from 'clone-deep';
@@ -104,11 +113,17 @@ interface ManageInputSpreadSheetProps {
   onClose: () => void;
 }
 
+const isSpreadSheetSavedAtom = atom<boolean>(true);
+
 const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen, onClose }) => {
   const [inputs, setInputs] = useAtom(dynamicTextInput);
   const cObjects = useAtomValue(canvasObjects);
   const [bodyRef, { height }] = useMeasure<HTMLDivElement>();
-  const [data, setData] = useState<Record<string, string>[]>([]);
+  const [draft, setDraft] = useState<Record<string, string>[]>([]);
+  const [isSaved, setSaved] = useAtom(isSpreadSheetSavedAtom);
+  const { isOpen: isAlertOpen, onOpen: onOpenAlert, onClose: onCloseAlert } = useDisclosure();
+
+  const toast = useToast();
 
   useEffect(() => {
     if (isOpen) {
@@ -140,7 +155,7 @@ const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen,
         }
       }
 
-      setData(array);
+      setDraft(array);
     }
   }, [isOpen]);
 
@@ -180,40 +195,120 @@ const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen,
     )
     .filter((val) => Object.keys(val).length > 0);
 
+  const handleChange = (value: Record<string, string>[]) => {
+    setDraft(value);
+    setSaved(false);
+  };
+
+  const handleSave = () => {
+    const data: Record<string, string[]> = {};
+
+    draft.forEach((val) => {
+      if (Object.keys(val).length === 0) {
+        Object.keys(cObjects).forEach((key) => {
+          val[key] = '';
+        });
+      }
+
+      Object.keys(val).forEach((key) => {
+        if (typeof data[key] === 'undefined') data[key] = [];
+
+        data[key].push(val[key]);
+      });
+    });
+
+    setInputs(data);
+    setSaved(true);
+    toast({
+      position: 'top',
+      status: 'success',
+      description: 'Your input has been saved.',
+    });
+  };
+
+  const handleClose = () => {
+    if (isSaved) onClose();
+    else onOpenAlert();
+  };
+
   return (
-    <Modal size="6xl" isCentered isOpen={isOpen} onClose={onClose}>
-      <ModalOverlay />
-      <ModalContent height="80%">
-        <ModalHeader>Manage Input</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody ref={bodyRef} height="100%">
-          <DataSheetGrid
-            height={height - 85}
-            value={data}
-            columns={columns}
-            onChange={(value: Record<string, string>[]) => {
-              const data: Record<string, string[]> = {};
+    <>
+      <SaveAlertModal
+        onClose={onCloseAlert}
+        isOpen={isAlertOpen}
+        onForceExit={() => {
+          onClose();
+          setSaved(true);
+        }}
+      />
+      <Modal size="6xl" isCentered isOpen={isOpen} onClose={handleClose}>
+        <ModalOverlay />
+        <ModalContent height="80%">
+          <ModalHeader>
+            <Box>
+              Manage Input
+              <Badge colorScheme={isSaved ? 'whatsapp' : 'red'} ml="2">
+                {isSaved ? 'Saved' : 'Unsaved'}
+              </Badge>
+            </Box>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody ref={bodyRef} height="100%">
+            <DataSheetGrid
+              height={height - 70}
+              value={draft}
+              columns={columns}
+              onChange={handleChange}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={handleClose} size="sm" mr="2" variant="outline" colorScheme="black">
+              Cancel
+            </Button>
+            <Button onClick={handleSave} size="sm" colorScheme="blue">
+              Save
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
+  );
+};
 
-              value.forEach((val) => {
-                if (Object.keys(val).length === 0) {
-                  Object.keys(cObjects).forEach((key) => {
-                    val[key] = '';
-                  });
-                }
+interface SaveAlertModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onForceExit: () => void;
+}
 
-                Object.keys(val).forEach((key) => {
-                  if (typeof data[key] === 'undefined') data[key] = [];
+const SaveAlertModal: React.FC<SaveAlertModalProps> = ({ isOpen, onClose, onForceExit }) => {
+  const cancelRef = useRef(null);
 
-                  data[key].push(val[key]);
-                });
-              });
-
-              setInputs(data);
-              setData(value);
+  return (
+    <AlertDialog isCentered isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
+      <AlertDialogContent fontSize="sm">
+        <AlertDialogHeader fontSize="md" fontWeight="bold">
+          Cancel Without Saving
+        </AlertDialogHeader>
+        <AlertDialogBody>Are you sure? You can&apos;t undo this action afterwards.</AlertDialogBody>
+        <AlertDialogFooter>
+          <Button variant="outline" colorScheme="black" size="sm" ref={cancelRef} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            colorScheme="red"
+            variant="outline"
+            onClick={() => {
+              onForceExit();
+              onClose();
             }}
-          />
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+            ml={3}
+          >
+            Don&apos;t Save
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };

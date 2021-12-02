@@ -552,7 +552,13 @@ const ResetModal: React.FC<ResetModalProps> = ({ isOpen, onClose, onReset }) => 
             Are you sure? You can&apos;t undo this action afterwards.
           </AlertDialogBody>
           <AlertDialogFooter>
-            <Button size="sm" ref={cancelRef} onClick={onClose}>
+            <Button
+              variant="outline"
+              colorScheme="black"
+              size="sm"
+              ref={cancelRef}
+              onClick={onClose}
+            >
               Cancel
             </Button>
             <Button
