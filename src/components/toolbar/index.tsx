@@ -1,4 +1,4 @@
-import { Box, Stack, Flex, Tooltip, useDisclosure, Button, Image, Text } from '@chakra-ui/react';
+import { Box, Stack, Flex, Tooltip, useDisclosure, Button, Text } from '@chakra-ui/react';
 import { useAtom } from 'jotai';
 import React from 'react';
 import { BsCursor, BsCursorText, BsGear } from 'react-icons/bs';
@@ -12,8 +12,9 @@ import { useEffect } from 'react';
 import { useAtomValue } from 'jotai/utils';
 import { useUndo } from 'hooks';
 import { LogoCertifastFull } from 'assets';
-import SettingsModal from './SettingsModal';
 import { COMPONENT_ID } from 'helpers';
+import * as gtag from 'libs/gtag';
+import SettingsModal from './SettingsModal';
 
 const Toolbar = () => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
@@ -112,7 +113,20 @@ const Toolbar = () => {
           Make Certificate Faster
         </Text>
         <Box h="6" w="2px" background="blackAlpha.300" ml="2" mr="4" />
-        <Button zIndex="100" colorScheme="whatsapp" w="32" size="sm">
+        <Button
+          onClick={() => {
+            gtag.event({
+              action: 'checkout_donate',
+              label: 'karya karsa',
+              category: 'engagement',
+              value: 0,
+            });
+          }}
+          zIndex="100"
+          colorScheme="whatsapp"
+          w="32"
+          size="sm"
+        >
           Donate
         </Button>
       </Box>
