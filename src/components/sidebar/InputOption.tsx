@@ -19,7 +19,6 @@ import {
   ModalFooter,
   useToast,
   AlertDialog,
-  AlertDialogOverlay,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogBody,
@@ -38,6 +37,7 @@ import React, { memo, useState, useEffect, useRef } from 'react';
 import { textColumn, DataSheetGrid, keyColumn, Column } from 'react-datasheet-grid';
 import { useMeasure } from 'react-use';
 import cloneDeep from 'clone-deep';
+import * as gtag from 'libs/gtag';
 
 const InputOption = () => {
   const [updateV1, setUpdateV1] = useAtom(updateV1Atom);
@@ -70,6 +70,12 @@ const InputOption = () => {
                   setPreventToolbar(true);
                   setPreventCanvasShortcut(true);
                   onOpen();
+                  gtag.event({
+                    action: 'manage_input',
+                    label: '',
+                    category: 'engagement',
+                    value: 0,
+                  });
                 }}
                 w="100%"
                 size="sm"
@@ -223,6 +229,13 @@ const ManageInputSpreadSheet: React.FC<ManageInputSpreadSheetProps> = ({ isOpen,
       position: 'top',
       status: 'success',
       description: 'Your input has been saved.',
+    });
+
+    gtag.event({
+      action: 'save_input',
+      label: '',
+      category: 'engagement',
+      value: 0,
     });
   };
 

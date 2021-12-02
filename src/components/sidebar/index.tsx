@@ -441,9 +441,6 @@ const Sidebar = () => {
           <SideBarNav
             onClick={() => {
               setActive('input');
-              if (Object.keys(cObjects).length > 0) {
-                gtag.event({ action: 'manage_input', label: '', category: 'engagement', value: 0 });
-              }
             }}
             isActive={active === 'input'}
           >

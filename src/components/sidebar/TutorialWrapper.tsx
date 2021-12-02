@@ -14,14 +14,22 @@ const TutorialWrapper = () => {
   const popupData = useAtomValue(activeTutorialAtom);
   const arrowStyle = useAtomValue(arrowStyleAtom);
 
-  const handleClose = () => setPopupOpen('');
+  const handleClose = () => {
+    setPopupOpen('');
+    if (popupData.onClose) popupData.onClose();
+  };
+
+  const handleFinish = () => {
+    setPopupOpen('');
+    if (popupData.onFinish) popupData.onFinish();
+  };
 
   return (
     <>
       {Object.keys(tutorialData).map((key) => (
         <AnimatePresence key={key}>
           {isPopupOpen === key && (
-            <TutorialPopup data={popupData} onClose={handleClose} onFinish={handleClose} />
+            <TutorialPopup data={popupData.data} onClose={handleClose} onFinish={handleFinish} />
           )}
         </AnimatePresence>
       ))}

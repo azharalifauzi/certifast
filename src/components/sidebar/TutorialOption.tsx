@@ -3,6 +3,7 @@ import { useUpdateAtom } from 'jotai/utils';
 import React from 'react';
 import { HiOutlineDocumentDuplicate } from 'react-icons/hi';
 import { ImFont } from 'react-icons/im';
+import * as gtag from 'libs/gtag';
 import { activeTutorialAtom, arrowStyleAtom, isPopupOpenAtom } from './atoms';
 import { tutorialData } from './data';
 import './tutorial-option.css';
@@ -16,11 +17,17 @@ const TutorialOption = () => {
     <Box>
       <TutorialItem
         Icon={<HiOutlineDocumentDuplicate size="32" />}
-        title="Generate Many Certificates"
-        description="The most basic way to create many certificates in no time."
+        title="Create Multiple Certificates"
+        description="The most basic way to create multiple certificates in no time."
         onClick={() => {
           setActiveTutorial(tutorialData.basic(setArrowStyle));
           setPopupOpen('basic');
+          gtag.event({
+            action: 'start_tutorial',
+            label: 'create multiple certificates',
+            category: 'engagement',
+            value: 1,
+          });
         }}
       />
       <TutorialItem
@@ -30,6 +37,12 @@ const TutorialOption = () => {
         onClick={() => {
           setActiveTutorial(tutorialData.customFont(setArrowStyle));
           setPopupOpen('customFont');
+          gtag.event({
+            action: 'start_tutorial',
+            label: 'add custom font',
+            category: 'engagement',
+            value: 1,
+          });
         }}
       />
     </Box>
