@@ -1,5 +1,5 @@
-import React from 'react';
-import { Canvas, Fonts, Sidebar, Toolbar, WhatsNew } from 'components';
+import React, { lazy, Suspense } from 'react';
+import { Fonts, AppFallback } from 'components';
 import './App.css';
 import { useAtom } from 'jotai';
 import { certifTemplate } from 'gstates';
@@ -13,6 +13,11 @@ import 'react-select/dist/react-select.css';
 import 'react-virtualized/styles.css';
 import 'react-virtualized-select/styles.css';
 import 'react-color-palette/lib/css/styles.css';
+
+const Canvas = lazy(() => import('components/canvas/index'));
+const Sidebar = lazy(() => import('components/sidebar/index'));
+const Toolbar = lazy(() => import('components/toolbar/index'));
+const WhatsNew = lazy(() => import('components/whatsnew/index'));
 
 function App() {
   const [template, setTemplate] = useAtom(certifTemplate);
@@ -74,7 +79,6 @@ function App() {
 
   return (
     <>
-      <WhatsNew />
       <Fonts />
       {isMobile ? (
         <Flex flexDir="column" px="6" h={height} justifyContent="center" alignItems="center">
@@ -86,25 +90,28 @@ function App() {
         </Flex>
       ) : (
         <div className="App">
-          {template.file.length > 0 ? (
-            <Canvas />
-          ) : (
-            <Box background="gray.100" position="fixed" top="0" bottom="0" right="72" left="0">
-              <FileDrop onDrop={handleFileDrop}>
-                <Flex justifyContent="center" alignItems="center" flexDir="column" height="100%">
-                  <Box mb="2">
-                    <BsCardImage color="#000" size={64} />
-                  </Box>
-                  <Text mb="1" fontWeight="semibold">
-                    Drop Certificate Template Here!
-                  </Text>
-                  <Text fontSize="xs">Support only PNG Format</Text>
-                </Flex>
-              </FileDrop>
-            </Box>
-          )}
-          <Sidebar />
-          <Toolbar />
+          <Suspense fallback={<AppFallback />}>
+            {template.file.length > 0 ? (
+              <Canvas />
+            ) : (
+              <Box background="gray.100" position="fixed" top="0" bottom="0" right="72" left="0">
+                <FileDrop onDrop={handleFileDrop}>
+                  <Flex justifyContent="center" alignItems="center" flexDir="column" height="100%">
+                    <Box mb="2">
+                      <BsCardImage color="#000" size={64} />
+                    </Box>
+                    <Text mb="1" fontWeight="semibold">
+                      Drop Certificate Template Here!
+                    </Text>
+                    <Text fontSize="xs">Support only PNG Format</Text>
+                  </Flex>
+                </FileDrop>
+              </Box>
+            )}
+            <Sidebar />
+            <Toolbar />
+            <WhatsNew />
+          </Suspense>
         </div>
       )}
     </>
