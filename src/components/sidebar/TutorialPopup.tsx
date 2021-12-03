@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Text, Flex, HStack } from '@chakra-ui/react';
+import { Box, Button, Text, Flex, HStack, AspectRatio } from '@chakra-ui/react';
 import { BsX } from 'react-icons/bs';
 import { motion } from 'framer-motion';
 
@@ -21,8 +21,7 @@ interface TutorialPopupProps {
 
 const TutorialPopup: React.FC<TutorialPopupProps> = ({ data = [], onClose, onFinish }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const { title, description, videoSrc, onBack, onMount, onNext, onUnMount } =
-    data[currentIndex] ?? {};
+  const { onBack, onMount, onNext, onUnMount } = data[currentIndex] ?? {};
 
   useEffect(() => {
     if (onMount) onMount();
@@ -57,7 +56,16 @@ const TutorialPopup: React.FC<TutorialPopupProps> = ({ data = [], onClose, onFin
       transition={{ ease: 'easeOut' }}
       style={{ position: 'fixed', bottom: '40px', right: '340px', zIndex: 999 }}
     >
-      <Box w="400px" minH="500px" background="white" boxShadow="lg" borderRadius="2xl" p="6">
+      <Box
+        position="absolute"
+        right="0"
+        bottom="0"
+        w="400px"
+        minH="500px"
+        background="white"
+        boxShadow="lg"
+        borderRadius="2xl"
+      >
         <Box
           _hover={{ background: 'blackAlpha.200' }}
           position="absolute"
@@ -67,33 +75,95 @@ const TutorialPopup: React.FC<TutorialPopupProps> = ({ data = [], onClose, onFin
           borderRadius="md"
           p="1"
           onClick={onClose}
+          zIndex="100"
         >
           <BsX size="24" />
         </Box>
-        <Text fontSize="lg" fontWeight="semibold" mb="1.5">
-          {title}
-        </Text>
-        <Text>{description}</Text>
-        <Box mt="6" background="blackAlpha.300" h="300px" borderRadius="xl" mb="6"></Box>
-        <Flex alignItems="center" justifyContent="space-between">
-          <StepIndicator length={data.length} currentStep={currentIndex} />
-          <Flex justifyContent="flex-end" alignItems="center" gridGap="3">
-            {currentIndex > 0 ? (
-              <Button onClick={handleBack} variant="ghost">
-                Back
-              </Button>
-            ) : null}
-            <Button onClick={handleNext} colorScheme="blue">
-              {currentIndex === data.length - 1 ? 'Finish' : 'Next'}
-            </Button>
-          </Flex>
-        </Flex>
+        {data.map(({ description, title, videoSrc }, i) => (
+          <Box key={`tutorial-step-${i}`}>
+            {currentIndex === i && (
+              <TutorialStep
+                title={title}
+                description={description}
+                onBack={handleBack}
+                onNext={handleNext}
+                length={data.length}
+                currentIndex={currentIndex}
+                videoSrc={videoSrc}
+              />
+            )}
+          </Box>
+        ))}
       </Box>
     </motion.div>
   );
 };
 
 export default TutorialPopup;
+
+interface TutorialStepProps {
+  onBack: () => void;
+  onNext: () => void;
+  title: string;
+  description: string;
+  videoSrc?: string;
+  currentIndex: number;
+  length: number;
+}
+
+const TutorialStep: React.FC<TutorialStepProps> = ({
+  title,
+  description,
+  onBack,
+  onNext,
+  currentIndex,
+  videoSrc,
+  length,
+}) => {
+  return (
+    <Flex
+      position="absolute"
+      top="0"
+      left="0"
+      p="6"
+      flexDirection="column"
+      justifyContent="flex-end"
+    >
+      <motion.div
+        initial={{ x: 20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: 20, opacity: 0 }}
+      >
+        <Text fontSize="lg" fontWeight="semibold" mb="1.5">
+          {title}
+        </Text>
+        <Text>{description}</Text>
+        <AspectRatio ratio={4 / 3} mt="6" borderRadius="xl" mb="6" overflow="hidden">
+          {videoSrc ? (
+            <video autoPlay muted playsInline loop src={videoSrc}>
+              <source src={videoSrc} type="video/mp4" />
+            </video>
+          ) : (
+            <Box />
+          )}
+        </AspectRatio>
+      </motion.div>
+      <Flex alignItems="center" justifyContent="space-between">
+        <StepIndicator length={length} currentStep={currentIndex} />
+        <Flex justifyContent="flex-end" alignItems="center" gridGap="3">
+          {currentIndex > 0 ? (
+            <Button onClick={onBack} variant="ghost">
+              Back
+            </Button>
+          ) : null}
+          <Button onClick={onNext} colorScheme="blue">
+            {currentIndex === length - 1 ? 'Finish' : 'Next'}
+          </Button>
+        </Flex>
+      </Flex>
+    </Flex>
+  );
+};
 
 interface StepIndicatorProps {
   length: number;

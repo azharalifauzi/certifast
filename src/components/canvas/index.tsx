@@ -855,6 +855,7 @@ const Canvas = () => {
             draggable={false}
             userSelect="none"
             zIndex="0"
+            alt="Certificate Template"
           />
           {Object.values(cObjects).map(({ type, data }) => {
             if (type === 'text') return <CanvasText key={data.id} id={data.id} />;
