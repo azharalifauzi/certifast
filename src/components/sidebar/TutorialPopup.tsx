@@ -81,17 +81,16 @@ const TutorialPopup: React.FC<TutorialPopupProps> = ({ data = [], onClose, onFin
         </Box>
         {data.map(({ description, title, videoSrc }, i) => (
           <Box key={`tutorial-step-${i}`}>
-            {currentIndex === i && (
-              <TutorialStep
-                title={title}
-                description={description}
-                onBack={handleBack}
-                onNext={handleNext}
-                length={data.length}
-                currentIndex={currentIndex}
-                videoSrc={videoSrc}
-              />
-            )}
+            <TutorialStep
+              title={title}
+              description={description}
+              onBack={handleBack}
+              onNext={handleNext}
+              length={data.length}
+              currentIndex={currentIndex}
+              videoSrc={videoSrc}
+              isVisible={currentIndex === i}
+            />
           </Box>
         ))}
       </Box>
@@ -109,6 +108,7 @@ interface TutorialStepProps {
   videoSrc?: string;
   currentIndex: number;
   length: number;
+  isVisible: boolean;
 }
 
 const TutorialStep: React.FC<TutorialStepProps> = ({
@@ -119,7 +119,13 @@ const TutorialStep: React.FC<TutorialStepProps> = ({
   currentIndex,
   videoSrc,
   length,
+  isVisible,
 }) => {
+  const variants = {
+    hidden: { x: -20, opacity: 0 },
+    visible: { x: 0, opacity: 1 },
+  };
+
   return (
     <Flex
       position="absolute"
@@ -128,8 +134,9 @@ const TutorialStep: React.FC<TutorialStepProps> = ({
       p="6"
       flexDirection="column"
       justifyContent="flex-end"
+      display={isVisible ? 'flex' : 'none'}
     >
-      <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
+      <motion.div variants={variants} animate={isVisible ? 'visible' : 'hidden'}>
         <Text fontSize="lg" fontWeight="semibold" mb="1.5">
           {title}
         </Text>
