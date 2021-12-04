@@ -79,6 +79,7 @@ export const tutorialData: TutorialData = {
       {
         title: 'Open Settings',
         description: 'Go to settings on toolbar and go to Custom Fonts menu',
+        videoSrc: '/video/tutorials/add-custom-font/step-1.mp4',
         onMount: () => {
           const target = document.getElementById(COMPONENT_ID.SETTINGS);
           const arrow = document.getElementById(COMPONENT_ID.ARROW_TUTORIAL);
@@ -105,10 +106,12 @@ export const tutorialData: TutorialData = {
       {
         title: 'Add your favourite Font',
         description: 'Click Add Font button and choose your font with otf or ttf format.',
+        videoSrc: '/video/tutorials/add-custom-font/step-2.mp4',
       },
       {
         title: 'See your favourite font',
         description: 'Now you can use your favourite font to generate certificates.',
+        videoSrc: '/video/tutorials/add-custom-font/step-3.mp4',
       },
     ],
     onFinish: () => {

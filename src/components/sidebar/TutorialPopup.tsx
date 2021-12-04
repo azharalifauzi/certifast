@@ -129,18 +129,14 @@ const TutorialStep: React.FC<TutorialStepProps> = ({
       flexDirection="column"
       justifyContent="flex-end"
     >
-      <motion.div
-        initial={{ x: 20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: 20, opacity: 0 }}
-      >
+      <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
         <Text fontSize="lg" fontWeight="semibold" mb="1.5">
           {title}
         </Text>
         <Text>{description}</Text>
         <AspectRatio ratio={4 / 3} mt="6" borderRadius="xl" mb="6" overflow="hidden">
           {videoSrc ? (
-            <video autoPlay muted playsInline loop src={videoSrc}>
+            <video autoPlay muted playsInline loop>
               <source src={videoSrc} type="video/mp4" />
             </video>
           ) : (
