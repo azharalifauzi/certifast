@@ -14,9 +14,10 @@ export const whatsNewData: WhatsNewData[] = [
     content: (
       <Box>
         <Text mb="2">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Corrupti doloribus ipsam nihil
-          aliquid at, eligendi reprehenderit, neque consectetur perspiciatis esse numquam quasi
-          soluta minima inventore illo. Doloribus provident magni architecto!
+          We are really excited to announce that version 1.0 is now released 🎉. We&apos;ve worked
+          so hard to bring better User Experience, just for you. Now, you&apos;ll able to manage
+          input easier than before, clearer way to add dynamic text, and fix some bugs 😅. Here are
+          the lists of update for version 1.0 :
         </Text>
         <UnorderedList pl="4" mb="6">
           <ListItem>New UI, hope you like it 😉.</ListItem>
@@ -27,7 +28,9 @@ export const whatsNewData: WhatsNewData[] = [
           <ListItem>Feature you want it so bad. Export PDF yaaay 🎉.</ListItem>
         </UnorderedList>
         <AspectRatio ratio={4 / 3}>
-          <Box background="blackAlpha.400" h="100%" />
+          <video autoPlay muted playsInline loop>
+            <source src="/video/whatsnew/1.0.mp4" type="video/mp4" />
+          </video>
         </AspectRatio>
       </Box>
     ),

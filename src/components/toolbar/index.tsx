@@ -115,6 +115,7 @@ const Toolbar = () => {
         <Box h="6" w="2px" background="blackAlpha.300" ml="2" mr="4" />
         <Button
           onClick={() => {
+            window.open('https://karyakarsa.com/azharalifauzi', '_blank');
             gtag.event({
               action: 'checkout_donate',
               label: 'karya karsa',
