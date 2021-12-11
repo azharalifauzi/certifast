@@ -115,6 +115,7 @@ const Toolbar = () => {
         <Box h="6" w="2px" background="blackAlpha.300" ml="2" mr="4" />
         <Button
           onClick={() => {
+            window.open('https://karyakarsa.com/azharalifauzi', '_blank');
             gtag.event({
               action: 'checkout_donate',
               label: 'karya karsa',
@@ -123,7 +124,7 @@ const Toolbar = () => {
             });
           }}
           zIndex="100"
-          colorScheme="whatsapp"
+          colorScheme="facebook"
           w="32"
           size="sm"
         >
@@ -146,6 +147,7 @@ const Toolbar = () => {
       >
         <Stack height="100%" spacing="0">
           <ToolbarItem
+            ariaLabel="Move"
             isActive={['move', 'resize'].includes(activeToolbar)}
             label="Move (V)"
             onClick={() => setActiveToolbar('move')}
@@ -158,6 +160,7 @@ const Toolbar = () => {
               label="Dynamic Text (T)"
               onClick={() => setActiveToolbar('text')}
               id={COMPONENT_ID.DYNAMIC_TEXT}
+              ariaLabel="Dynamic Text"
             >
               <BsCursorText color="black" size="24" />
             </ToolbarItem>
@@ -166,6 +169,7 @@ const Toolbar = () => {
             id={COMPONENT_ID.SETTINGS}
             label="Settings (S)"
             onClick={() => onOpenSettingsModal()}
+            ariaLabel="Settings"
           >
             <BsGear color="black" size="24" />
           </ToolbarItem>
@@ -183,6 +187,7 @@ interface ToolbarItemProps {
   onClick?(): void;
   style?: React.CSSProperties;
   id?: string;
+  ariaLabel?: string;
 }
 
 // eslint-disable-next-line react/display-name
@@ -193,6 +198,7 @@ const ToolbarItem: React.FC<ToolbarItemProps> = ({
   onClick,
   style,
   id,
+  ariaLabel,
 }) => {
   return (
     <Tooltip closeOnMouseDown openDelay={500} label={label} placement="right">
@@ -207,6 +213,7 @@ const ToolbarItem: React.FC<ToolbarItemProps> = ({
         background={isActive ? 'blue.200' : undefined}
         onClick={onClick}
         id={id}
+        aria-label={ariaLabel}
       >
         {children}
       </Flex>
