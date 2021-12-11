@@ -42,6 +42,7 @@ import { supabase } from 'libs/supabase';
 import jsPDF from 'jspdf';
 import TutorialOption from './TutorialOption';
 import TutorialWrapper from './TutorialWrapper';
+import { printCertif } from 'helpers/printCertif';
 
 const Sidebar = () => {
   const [certifTemplate, setCertifTemplate] = useAtom(certifTemplateAtom);
@@ -106,7 +107,7 @@ const Sidebar = () => {
       }
 
       inputs?.forEach((val, index) => {
-        const textWidth = measureText(val, data.family, data.size).width;
+        const { width: textWidth, height } = measureText(val, data.family, data.size);
         let x = data.x / zoom;
 
         if (data.align === 'center') {
@@ -127,10 +128,12 @@ const Sidebar = () => {
         // notes : font size not sync with wasm -> Zen Kurenaido
 
         certificateInput[index].push({
-          y,
+          x,
+          fontWeight,
+          y: y + height,
+          fontName: font?.family,
           text: val?.toString(),
-          x: data.align === 'left' ? x : x + textWidth * 0.06,
-          font_size: data.size * 1.067,
+          font_size: data.size,
           font_fam: fontBase64,
           color: [red, green, blue, alpha],
         });
@@ -162,11 +165,10 @@ const Sidebar = () => {
     });
   };
 
-  const handleGenerateCertificate = () => {
+  const handleGenerateCertificate = async () => {
     const worker = new Worker('/worker.js');
 
     worker.postMessage({ type: 'init', wasm_uri: '/abi/core_certifast_bg.wasm' });
-    setProgressState('init');
     setIsProgressModalOpen(true);
 
     const certificateInput: any[][] = [...certificateInputs];
@@ -190,102 +192,119 @@ const Sidebar = () => {
     const imgBase64 = certifTemplate.file.split(',')[1];
     const arrBuff = decode(imgBase64);
     const imgUnitArr = new Uint8Array(arrBuff);
+    setProgressState('printing');
 
-    if (fileFormat === 'jpg')
-      worker.postMessage({ type: 'print', texts: certificateInput, certif_template: imgUnitArr });
-    else if (fileFormat === 'pdf')
-      worker.postMessage({
-        type: 'print_pdf',
-        texts: certificateInput,
-        certif_template: imgUnitArr,
+    const getCertificates = () =>
+      new Promise((resolve) => {
+        const certificates: Blob[] = [];
+        certificateInput.forEach((textData, i) => {
+          setTimeout(() => {
+            setProgress(i + 1);
+            const result = printCertif(certifTemplate, textData);
+            certificates.push(result);
+            if (certificates.length === certificateInput.length) resolve(certificates);
+          }, 100);
+        });
       });
 
-    worker.addEventListener('message', (e) => {
-      const msg = e.data;
+    const certificates = await getCertificates();
 
-      if (msg.type === 'print') {
-        const blob = new Blob([msg.data.buffer]);
+    console.log(certificates);
+    // setIsProgressModalOpen(false);
 
-        const url = URL.createObjectURL(blob);
+    // if (fileFormat === 'jpg')
+    //   worker.postMessage({ type: 'print', texts: certificateInput, certif_template: imgUnitArr });
+    // else if (fileFormat === 'pdf')
+    //   worker.postMessage({
+    //     type: 'print_pdf',
+    //     texts: certificateInput,
+    //     certif_template: imgUnitArr,
+    //   });
 
-        const a = document.createElement('a');
-        a.setAttribute('download', `Certificates.zip`);
-        a.setAttribute('href', url);
-        a.style.display = 'none';
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        setIsProgressModalOpen(false);
-        setProgressState('end');
-        const fileSize = (blob.size / 1024 ** 2).toFixed(2); // send data in megabytes unit
-        gtag.customDimension(['certificates_count', 'download_size'], 'generate_certificate', {
-          certificates_count: certificateInput.length,
-          download_size: fileSize,
-        });
-        // send analytics to supabase only in prod
-        if (import.meta.env.PROD)
-          supabase
-            .from('analytics')
-            .insert([
-              {
-                certificate_count: certificateInput.length,
-                certificate_file_size: parseFloat(fileSize),
-              },
-            ])
-            .then((res) =>
-              console.log(
-                res.status.toString().startsWith('2') ? 'Send Analytics' : 'Analytics failed'
-              )
-            );
-      }
+    // worker.addEventListener('message', (e) => {
+    //   const msg = e.data;
 
-      if (msg.type === 'print_pdf') {
-        const images: Uint8Array[] = msg.data;
-        const files: Uint8Array[] = [];
-        const file_names: string[] = [];
+    //   if (msg.type === 'print') {
+    //     const blob = new Blob([msg.data.buffer]);
 
-        for (let i = 0; i < images.length; i++) {
-          setProgressState('convertPdf');
-          setProgress(i + 1);
-          const image = images[i];
-          const pdf = new jsPDF({
-            unit: 'px',
-            format: [certifTemplate.width, certifTemplate.height],
-            orientation: certifTemplate.width > certifTemplate.height ? 'landscape' : 'portrait',
-            hotfixes: ['px_scaling'],
-          });
-          pdf.addImage(image, 'JPEG', 0, 0, certifTemplate.width, certifTemplate.height);
-          const file = new Uint8Array(pdf.output('arraybuffer'));
-          files.push(file);
-          file_names.push(certificateInput[i][0].text.toString());
-        }
+    //     const url = URL.createObjectURL(blob);
 
-        setProgressState('archiving');
-        worker.postMessage({ type: 'archive', files, file_names });
-      }
+    //     const a = document.createElement('a');
+    //     a.setAttribute('download', `Certificates.zip`);
+    //     a.setAttribute('href', url);
+    //     a.style.display = 'none';
+    //     a.click();
+    //     a.remove();
+    //     URL.revokeObjectURL(url);
+    //     setIsProgressModalOpen(false);
+    //     setProgressState('end');
+    //     const fileSize = (blob.size / 1024 ** 2).toFixed(2); // send data in megabytes unit
+    //     gtag.customDimension(['certificates_count', 'download_size'], 'generate_certificate', {
+    //       certificates_count: certificateInput.length,
+    //       download_size: fileSize,
+    //     });
+    //     // send analytics to supabase only in prod
+    //     if (import.meta.env.PROD)
+    //       supabase
+    //         .from('analytics')
+    //         .insert([
+    //           {
+    //             certificate_count: certificateInput.length,
+    //             certificate_file_size: parseFloat(fileSize),
+    //           },
+    //         ])
+    //         .then((res) =>
+    //           console.log(
+    //             res.status.toString().startsWith('2') ? 'Send Analytics' : 'Analytics failed'
+    //           )
+    //         );
+    //   }
 
-      if (msg.type === 'progress') {
-        if (msg.data === 'load image') setProgressState('load image');
-        else if (typeof msg.data === 'number') {
-          setProgressState('printing');
-          setProgress(msg.data + 1);
-        } else setProgressState('archiving');
-      }
+    //   if (msg.type === 'print_pdf') {
+    //     const images: Uint8Array[] = msg.data;
+    //     const files: Uint8Array[] = [];
+    //     const file_names: string[] = [];
 
-      if (msg.type === 'error') {
-        toast({
-          title: 'Something went wrong, try to change input format from excel to "TEXT"',
-          status: 'error',
-          position: 'top',
-          duration: 3000,
-        });
+    //     for (let i = 0; i < images.length; i++) {
+    //       setProgressState('convertPdf');
+    //       setProgress(i + 1);
+    //       const image = images[i];
+    //       const pdf = new jsPDF({
+    //         unit: 'px',
+    //         format: [certifTemplate.width, certifTemplate.height],
+    //         orientation: certifTemplate.width > certifTemplate.height ? 'landscape' : 'portrait',
+    //         hotfixes: ['px_scaling'],
+    //       });
+    //       pdf.addImage(image, 'JPEG', 0, 0, certifTemplate.width, certifTemplate.height);
+    //       const file = new Uint8Array(pdf.output('arraybuffer'));
+    //       files.push(file);
+    //       file_names.push(certificateInput[i][0].text.toString());
+    //     }
 
-        setProgressState('end');
-        setIsProgressModalOpen(false);
-      }
-    });
+    //     setProgressState('archiving');
+    //     worker.postMessage({ type: 'archive', files, file_names });
+    //   }
 
-    setProgressState('end');
+    //   if (msg.type === 'progress') {
+    //     if (msg.data === 'load image') setProgressState('load image');
+    //     else if (typeof msg.data === 'number') {
+    //       setProgressState('printing');
+    //       setProgress(msg.data + 1);
+    //     } else setProgressState('archiving');
+    //   }
+
+    //   if (msg.type === 'error') {
+    //     toast({
+    //       title: 'Something went wrong, try to change input format from excel to "TEXT"',
+    //       status: 'error',
+    //       position: 'top',
+    //       duration: 3000,
+    //     });
+
+    //     setProgressState('end');
+    //     setIsProgressModalOpen(false);
+    //   }
+    // });
   };
 
   const handleReset = () => {

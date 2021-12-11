@@ -1,7 +1,7 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
-type CertifTemplate = {
+export type CertifTemplate = {
   file: string;
   width: number;
   height: number;
