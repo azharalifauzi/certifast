@@ -1,5 +1,6 @@
 import { decode } from 'base64-arraybuffer';
 import { CertifTemplate } from 'gstates';
+import jsPDF from 'jspdf';
 
 type TextData = {
   x: number;
@@ -8,11 +9,15 @@ type TextData = {
   font_size: number;
   font_fam: string;
   color: [number, number, number, number];
-  fontWeight: number;
+  fontWeight: string | number;
   fontName: string;
 };
 
-export const printCertif = (certifTemplate: CertifTemplate, textData: TextData[]) => {
+export const printCertif = (
+  certifTemplate: CertifTemplate,
+  textData: TextData[],
+  format: 'jpg' | 'pdf' = 'jpg'
+) => {
   let canvasCache = document.getElementById('certif-render-engine') as HTMLCanvasElement;
 
   if (!canvasCache) {
@@ -35,15 +40,40 @@ export const printCertif = (certifTemplate: CertifTemplate, textData: TextData[]
     ctx.drawImage(image, 0, 0, certifTemplate.width, certifTemplate.height);
     textData.forEach(({ x, y, font_fam, font_size, color, text, fontName, fontWeight }) => {
       ctx.font = `${font_size}px "${fontName}"`;
+
+      if (fontWeight !== 'opentype') {
+        ctx.font = fontWeight.toString().concat(' ', ctx.font);
+      }
+
       ctx.fillStyle = `rgba(${color.join(', ')})`;
       ctx.textAlign = 'left';
       ctx.fillText(text, x, y);
     });
   }
 
-  const dataUrl = canvasCache.toDataURL('image/png').split(',')[1];
-  const arrayBuff = decode(dataUrl);
-  const blob = new Blob([arrayBuff], { type: 'image/png' });
+  if (format === 'pdf') {
+    const pdf = new jsPDF({
+      unit: 'px',
+      format: [certifTemplate.width, certifTemplate.height],
+      orientation: certifTemplate.width > certifTemplate.height ? 'landscape' : 'portrait',
+      hotfixes: ['px_scaling'],
+    });
+    pdf.addImage(
+      canvasCache.toDataURL('image/jpeg', 1.0),
+      'JPEG',
+      0,
+      0,
+      certifTemplate.width,
+      certifTemplate.height
+    );
+    const file = new Uint8Array(pdf.output('arraybuffer'));
 
-  return blob;
+    return file;
+  }
+
+  const dataUrl = canvasCache.toDataURL('image/jpg', 1.0).split(',')[1];
+  const arrayBuff = decode(dataUrl);
+  const uint8array = new Uint8Array(arrayBuff);
+
+  return uint8array;
 };

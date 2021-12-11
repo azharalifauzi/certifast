@@ -48,7 +48,7 @@ self.addEventListener('message', (e) => {
       if (!instance) return;
       instance.then(() => {
         try {
-          const result = wasm_bindgen.archive(msg.files, msg.file_names);
+          const result = wasm_bindgen.archive(msg.files, msg.file_names, msg.file_format);
 
           self.postMessage({ data: result, type: 'print' });
         } catch (error) {

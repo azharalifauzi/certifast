@@ -246,7 +246,7 @@ pub fn print_many_certificate_without_zip(
 }
 
 #[wasm_bindgen]
-pub fn archive(files: Vec<Uint8Array>, file_names: &JsValue) -> Vec<u8> {
+pub fn archive(files: Vec<Uint8Array>, file_names: &JsValue, file_format: &str) -> Vec<u8> {
     let mut archive = Cursor::new(Vec::new());
     let mut zip = ZipWriter::new(&mut archive);
     let options = write::FileOptions::default().compression_method(CompressionMethod::Stored);
@@ -266,7 +266,7 @@ pub fn archive(files: Vec<Uint8Array>, file_names: &JsValue) -> Vec<u8> {
         let file_name = file_names[index].clone();
 
         zip.start_file(
-            &format!("{}.pdf", file_name),
+            &format!("{}.{}", file_name, file_format),
             options.last_modified_time(now),
         )
         .unwrap();

@@ -26,20 +26,16 @@ import {
   certifTemplate as certifTemplateAtom,
   dynamicTextInput as dynamicTextInputAtom,
   selectedObject,
-  customFonts as customFontsAtom,
 } from 'gstates';
 import TextOption from './TextOption';
 import { useAtom } from 'jotai';
 import InputOption from './InputOption';
 import { zoomCanvas } from 'components/canvas';
-import { decode, encode } from 'base64-arraybuffer';
 import { measureText } from 'helpers';
 import hexRgb from 'hex-rgb';
-import { useAtomValue } from 'jotai/utils';
 import Loading from 'components/loading';
 import * as gtag from 'libs/gtag';
 import { supabase } from 'libs/supabase';
-import jsPDF from 'jspdf';
 import TutorialOption from './TutorialOption';
 import TutorialWrapper from './TutorialWrapper';
 import { printCertif } from 'helpers/printCertif';
@@ -49,7 +45,6 @@ const Sidebar = () => {
   const [cObjects, setCObjects] = useAtom(canvasObjects);
   const [zoom, setZoom] = useAtom(zoomCanvas);
   const [dynamicTextInput, setDynamicTextInput] = useAtom(dynamicTextInputAtom);
-  const customFonts = useAtomValue(customFontsAtom);
   const [selected, setSelected] = useAtom(selectedObject);
   const [active, setActive] = useState<'general' | 'input' | 'tutorial'>('general');
   const [isProgressModalOpen, setIsProgressModalOpen] = useState<boolean>(false);
@@ -70,17 +65,6 @@ const Sidebar = () => {
     const dynamicTextData = Object.values(cObjects);
     const certificateInput: any[][] = [];
 
-    const arrayOfFonts = async (): Promise<Array<GoogleFont | CustomFont>> => {
-      const apiKey = import.meta.env.VITE_GOOGLE_FONTS_API_KEY;
-      const res = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`);
-
-      const data = await res.json();
-      const items: Array<GoogleFont | CustomFont> = [...data.items, ...customFonts];
-
-      return items;
-    };
-
-    const fonts = await arrayOfFonts();
     const inputMetaData: Record<string, number> = {};
 
     const loop = dynamicTextData.map(async ({ data }, idx) => {
@@ -89,22 +73,6 @@ const Sidebar = () => {
       const widthTextTempalte = measureText(data.text, data.family, data.size).width;
       const color = hexRgb(data.color);
       const { red, green, blue, alpha } = color;
-
-      const font = fonts.find(({ family }) => data.family === family);
-      let fontWeight = data.weight;
-      if (fontWeight === '400') fontWeight = 'regular';
-      let fontFileUrl = font?.files[fontWeight];
-      if (import.meta.env.PROD) fontFileUrl = fontFileUrl?.replace('http', 'https');
-
-      let fontBase64: string;
-
-      if (font?.kind === 'custom' && font.files) {
-        fontBase64 = font.files[fontWeight].split(',')[1];
-      } else {
-        const fontFile = await fetch(fontFileUrl ?? '');
-        const fontArrayBuff = await fontFile.arrayBuffer();
-        fontBase64 = encode(fontArrayBuff);
-      }
 
       inputs?.forEach((val, index) => {
         const { width: textWidth, height } = measureText(val, data.family, data.size);
@@ -129,12 +97,11 @@ const Sidebar = () => {
 
         certificateInput[index].push({
           x,
-          fontWeight,
+          fontWeight: data.weight,
           y: y + height,
-          fontName: font?.family,
+          fontName: data.family,
           text: val?.toString(),
           font_size: data.size,
-          font_fam: fontBase64,
           color: [red, green, blue, alpha],
         });
       });
@@ -170,7 +137,7 @@ const Sidebar = () => {
 
     worker.postMessage({ type: 'init', wasm_uri: '/abi/core_certifast_bg.wasm' });
     setIsProgressModalOpen(true);
-
+    setProgressState('init');
     const certificateInput: any[][] = [...certificateInputs];
 
     let selectedName = selectedFileName;
@@ -188,123 +155,84 @@ const Sidebar = () => {
     }
 
     setConfirmGenerateCert(false);
-
-    const imgBase64 = certifTemplate.file.split(',')[1];
-    const arrBuff = decode(imgBase64);
-    const imgUnitArr = new Uint8Array(arrBuff);
     setProgressState('printing');
 
-    const getCertificates = () =>
+    const getCertificates = (): Promise<{ certificates: Uint8Array[]; file_names: string[] }> =>
       new Promise((resolve) => {
-        const certificates: Blob[] = [];
+        const certificates: Uint8Array[] = [];
+        const file_names: string[] = [];
         certificateInput.forEach((textData, i) => {
           setTimeout(() => {
             setProgress(i + 1);
-            const result = printCertif(certifTemplate, textData);
+            const result = printCertif(certifTemplate, textData, fileFormat);
             certificates.push(result);
-            if (certificates.length === certificateInput.length) resolve(certificates);
+            file_names.push(certificateInput[i][0].text.toString());
+            if (certificates.length === certificateInput.length)
+              resolve({ certificates, file_names });
           }, 100);
         });
       });
 
-    const certificates = await getCertificates();
+    const { certificates, file_names } = await getCertificates();
 
-    console.log(certificates);
-    // setIsProgressModalOpen(false);
+    worker.postMessage({
+      file_names,
+      type: 'archive',
+      files: certificates,
+      file_format: fileFormat,
+    });
 
-    // if (fileFormat === 'jpg')
-    //   worker.postMessage({ type: 'print', texts: certificateInput, certif_template: imgUnitArr });
-    // else if (fileFormat === 'pdf')
-    //   worker.postMessage({
-    //     type: 'print_pdf',
-    //     texts: certificateInput,
-    //     certif_template: imgUnitArr,
-    //   });
+    worker.addEventListener('message', (e) => {
+      const msg = e.data;
 
-    // worker.addEventListener('message', (e) => {
-    //   const msg = e.data;
+      if (msg.type === 'print') {
+        const blob = new Blob([msg.data.buffer]);
 
-    //   if (msg.type === 'print') {
-    //     const blob = new Blob([msg.data.buffer]);
+        const url = URL.createObjectURL(blob);
 
-    //     const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('download', `Certificates.zip`);
+        a.setAttribute('href', url);
+        a.style.display = 'none';
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        setIsProgressModalOpen(false);
+        setProgressState('end');
+        const fileSize = (blob.size / 1024 ** 2).toFixed(2); // send data in megabytes unit
+        gtag.customDimension(['certificates_count', 'download_size'], 'generate_certificate', {
+          certificates_count: certificateInput.length,
+          download_size: fileSize,
+        });
+        // send analytics to supabase only in prod
+        if (import.meta.env.PROD)
+          supabase
+            .from('analytics')
+            .insert([
+              {
+                certificate_count: certificateInput.length,
+                certificate_file_size: parseFloat(fileSize),
+              },
+            ])
+            .then((res) =>
+              console.log(
+                res.status.toString().startsWith('2') ? 'Send Analytics' : 'Analytics failed'
+              )
+            );
+      }
 
-    //     const a = document.createElement('a');
-    //     a.setAttribute('download', `Certificates.zip`);
-    //     a.setAttribute('href', url);
-    //     a.style.display = 'none';
-    //     a.click();
-    //     a.remove();
-    //     URL.revokeObjectURL(url);
-    //     setIsProgressModalOpen(false);
-    //     setProgressState('end');
-    //     const fileSize = (blob.size / 1024 ** 2).toFixed(2); // send data in megabytes unit
-    //     gtag.customDimension(['certificates_count', 'download_size'], 'generate_certificate', {
-    //       certificates_count: certificateInput.length,
-    //       download_size: fileSize,
-    //     });
-    //     // send analytics to supabase only in prod
-    //     if (import.meta.env.PROD)
-    //       supabase
-    //         .from('analytics')
-    //         .insert([
-    //           {
-    //             certificate_count: certificateInput.length,
-    //             certificate_file_size: parseFloat(fileSize),
-    //           },
-    //         ])
-    //         .then((res) =>
-    //           console.log(
-    //             res.status.toString().startsWith('2') ? 'Send Analytics' : 'Analytics failed'
-    //           )
-    //         );
-    //   }
+      if (msg.type === 'error') {
+        toast({
+          title: 'Something went wrong, try to change input format from excel to "TEXT"',
+          status: 'error',
+          position: 'top',
+          duration: 3000,
+        });
 
-    //   if (msg.type === 'print_pdf') {
-    //     const images: Uint8Array[] = msg.data;
-    //     const files: Uint8Array[] = [];
-    //     const file_names: string[] = [];
-
-    //     for (let i = 0; i < images.length; i++) {
-    //       setProgressState('convertPdf');
-    //       setProgress(i + 1);
-    //       const image = images[i];
-    //       const pdf = new jsPDF({
-    //         unit: 'px',
-    //         format: [certifTemplate.width, certifTemplate.height],
-    //         orientation: certifTemplate.width > certifTemplate.height ? 'landscape' : 'portrait',
-    //         hotfixes: ['px_scaling'],
-    //       });
-    //       pdf.addImage(image, 'JPEG', 0, 0, certifTemplate.width, certifTemplate.height);
-    //       const file = new Uint8Array(pdf.output('arraybuffer'));
-    //       files.push(file);
-    //       file_names.push(certificateInput[i][0].text.toString());
-    //     }
-
-    //     setProgressState('archiving');
-    //     worker.postMessage({ type: 'archive', files, file_names });
-    //   }
-
-    //   if (msg.type === 'progress') {
-    //     if (msg.data === 'load image') setProgressState('load image');
-    //     else if (typeof msg.data === 'number') {
-    //       setProgressState('printing');
-    //       setProgress(msg.data + 1);
-    //     } else setProgressState('archiving');
-    //   }
-
-    //   if (msg.type === 'error') {
-    //     toast({
-    //       title: 'Something went wrong, try to change input format from excel to "TEXT"',
-    //       status: 'error',
-    //       position: 'top',
-    //       duration: 3000,
-    //     });
-
-    //     setProgressState('end');
-    //     setIsProgressModalOpen(false);
-    //   }
-    // });
+        setProgressState('end');
+        setIsProgressModalOpen(false);
+      }
+    });
   };
 
   const handleReset = () => {
