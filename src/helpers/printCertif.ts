@@ -38,7 +38,7 @@ export const printCertif = (
   const ctx = canvasCache.getContext('2d');
   if (ctx) {
     ctx.drawImage(image, 0, 0, certifTemplate.width, certifTemplate.height);
-    textData.forEach(({ x, y, font_fam, font_size, color, text, fontName, fontWeight }) => {
+    textData.forEach(({ x, y, font_size, color, text, fontName, fontWeight }) => {
       ctx.font = `${font_size}px "${fontName}"`;
 
       if (fontWeight !== 'opentype') {
@@ -47,6 +47,7 @@ export const printCertif = (
 
       ctx.fillStyle = `rgba(${color.join(', ')})`;
       ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
       ctx.fillText(text, x, y);
     });
   }

@@ -70,12 +70,12 @@ const Sidebar = () => {
     const loop = dynamicTextData.map(async ({ data }, idx) => {
       inputMetaData[data.id] = idx;
       const inputs = dynamicTextInput[data.id];
-      const widthTextTempalte = measureText(data.text, data.family, data.size).width;
+      const widthTextTempalte = measureText(data.text, data.family, data.size, data.weight).width;
       const color = hexRgb(data.color);
       const { red, green, blue, alpha } = color;
 
       inputs?.forEach((val, index) => {
-        const { width: textWidth, height } = measureText(val, data.family, data.size);
+        const { width: textWidth } = measureText(val, data.family, data.size, data.weight);
         let x = data.x / zoom;
 
         if (data.align === 'center') {
@@ -97,8 +97,8 @@ const Sidebar = () => {
 
         certificateInput[index].push({
           x,
+          y,
           fontWeight: data.weight,
-          y: y + height,
           fontName: data.family,
           text: val?.toString(),
           font_size: data.size,

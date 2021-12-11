@@ -22,8 +22,8 @@ export type CanvasTextMeta = {
   family: string;
   color: string;
   id: string;
-  width?: number;
-  height?: number;
+  width: number;
+  height: number;
   isSnapped: boolean;
 };
 
