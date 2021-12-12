@@ -240,19 +240,22 @@ function passArrayJsValueToWasm0(array, malloc) {
 /**
 * @param {(Uint8Array)[]} files
 * @param {any} file_names
+* @param {string} file_format
 * @returns {Uint8Array}
 */
-__exports.archive = function(files, file_names) {
+__exports.archive = function(files, file_names, file_format) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         var ptr0 = passArrayJsValueToWasm0(files, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
-        wasm.archive(retptr, ptr0, len0, addBorrowedObject(file_names));
+        var ptr1 = passStringToWasm0(file_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len1 = WASM_VECTOR_LEN;
+        wasm.archive(retptr, ptr0, len0, addBorrowedObject(file_names), ptr1, len1);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
         var r1 = getInt32Memory0()[retptr / 4 + 1];
-        var v1 = getArrayU8FromWasm0(r0, r1).slice();
+        var v2 = getArrayU8FromWasm0(r0, r1).slice();
         wasm.__wbindgen_free(r0, r1 * 1);
-        return v1;
+        return v2;
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
         heap[stack_pointer++] = undefined;

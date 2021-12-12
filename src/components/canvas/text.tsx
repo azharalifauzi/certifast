@@ -115,8 +115,10 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
   useEffect(() => {
     setCObjects((objects) => {
       const newObj = { ...objects };
-      newObj[id].data.height = height / zoom + 10;
-      newObj[id].data.width = width / zoom + 10;
+      const { width, height } = document.getElementById(id)!.getBoundingClientRect();
+
+      newObj[id].data.height = height / zoom;
+      newObj[id].data.width = width / zoom;
 
       return newObj;
     });
@@ -396,7 +398,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
         userSelect="none"
         position="absolute"
         border="2px solid"
-        lineHeight="1.0"
+        lineHeight="normal"
         borderColor={selected === id ? 'blue.400' : 'transparent'}
         fontSize={textData.size * zoom}
         onMouseDown={onMouseDown}
@@ -404,6 +406,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
           if (activeToolbar === 'move' && resize) setResize(false);
         }}
         onDoubleClick={handleEdit}
+        id={id}
       >
         {selected === id ? (
           <Box

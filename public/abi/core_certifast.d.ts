@@ -33,9 +33,10 @@ declare namespace wasm_bindgen {
 	/**
 	* @param {(Uint8Array)[]} files
 	* @param {any} file_names
+	* @param {string} file_format
 	* @returns {Uint8Array}
 	*/
-	export function archive(files: (Uint8Array)[], file_names: any): Uint8Array;
+	export function archive(files: (Uint8Array)[], file_names: any, file_format: string): Uint8Array;
 	
 }
 
@@ -47,7 +48,7 @@ declare interface InitOutput {
   readonly print_many_certificate: (a: number, b: number, c: number, d: number) => void;
   readonly print_certificate: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: number) => void;
   readonly print_many_certificate_without_zip: (a: number, b: number, c: number, d: number) => void;
-  readonly archive: (a: number, b: number, c: number, d: number) => void;
+  readonly archive: (a: number, b: number, c: number, d: number, e: number, f: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;

@@ -1,7 +1,7 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
-type CertifTemplate = {
+export type CertifTemplate = {
   file: string;
   width: number;
   height: number;
@@ -22,8 +22,8 @@ export type CanvasTextMeta = {
   family: string;
   color: string;
   id: string;
-  width?: number;
-  height?: number;
+  width: number;
+  height: number;
   isSnapped: boolean;
 };
 

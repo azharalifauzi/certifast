@@ -22,7 +22,7 @@ import {
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
 import { atomWithStorage, useUpdateAtom } from 'jotai/utils';
-import { debounce, SIDEBAR_WIDTH } from 'helpers';
+import { debounce, measureText, SIDEBAR_WIDTH } from 'helpers';
 import { useSelectionBox, useUndo } from 'hooks';
 import MultiSelectBox from './MultiSelectBox';
 import ScrollBar from './ScrollBar';
@@ -750,18 +750,25 @@ const Canvas = () => {
         if (type === 'text') count++;
       });
       pushToUndoStack(cObjects);
+      const text = `Text-${count + 1}`;
+      const weight = '400';
+      const family = 'Roboto';
+      const size = 32;
+      const { height, width } = measureText(text, family, size, weight);
       setCObjects({
         ...cObjects,
         [newId]: {
           type: 'text',
           data: {
+            text,
+            weight,
+            family,
+            size,
+            height,
+            width,
             align: 'center',
             color: '#000',
-            family: 'Roboto',
             id: newId,
-            size: 32,
-            text: `Text-${count + 1}`,
-            weight: '400',
             x: mousePosRelativeToTemplate.x,
             y: mousePosRelativeToTemplate.y - (32 * 1.2) / 2,
             isSnapped: false,
@@ -856,6 +863,7 @@ const Canvas = () => {
             userSelect="none"
             zIndex="0"
             alt="Certificate Template"
+            id="certif-template"
           />
           {Object.values(cObjects).map(({ type, data }) => {
             if (type === 'text') return <CanvasText key={data.id} id={data.id} />;
