@@ -11,6 +11,7 @@ type TextData = {
   color: [number, number, number, number];
   fontWeight: string | number;
   fontName: string;
+  height: number;
 };
 
 export const printCertif = (
@@ -47,8 +48,10 @@ export const printCertif = (
 
       ctx.fillStyle = `rgba(${color.join(', ')})`;
       ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText(text, x, y);
+      ctx.textBaseline = 'alphabetic';
+      const textDimOnCanvas = ctx.measureText(text);
+
+      ctx.fillText(text, x, y + textDimOnCanvas.fontBoundingBoxAscent);
     });
   }
 

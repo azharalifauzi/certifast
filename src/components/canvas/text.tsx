@@ -398,7 +398,7 @@ const CanvasText: React.FC<CanvasTextProps> = ({ id }) => {
         userSelect="none"
         position="absolute"
         border="2px solid"
-        lineHeight="1.0"
+        lineHeight="normal"
         borderColor={selected === id ? 'blue.400' : 'transparent'}
         fontSize={textData.size * zoom}
         onMouseDown={onMouseDown}
