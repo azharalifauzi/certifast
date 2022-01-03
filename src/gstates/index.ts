@@ -1,7 +1,7 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
-type CertifTemplate = {
+export type CertifTemplate = {
   file: string;
   width: number;
   height: number;
@@ -22,8 +22,8 @@ export type CanvasTextMeta = {
   family: string;
   color: string;
   id: string;
-  width?: number;
-  height?: number;
+  width: number;
+  height: number;
   isSnapped: boolean;
 };
 
@@ -54,3 +54,12 @@ export const isObjectMoving = atom<boolean>(false);
 
 type Event = 'resize' | 'move' | 'pan' | 'select' | 'multiselect' | 'idle' | 'zoom' | 'textedit';
 export const activeEvent = atom<Event>('idle');
+
+export const preventCanvasShortcut = atom<boolean>(false);
+export const customFonts = atomWithStorage<CustomFont[]>('customFonts', []);
+export const newTextJustAddedID = atom<string>('');
+
+export const updateV1Atom = atomWithStorage('CERTIFAST_V1.0', {
+  whatsnew: true,
+  manageInputPopover: true,
+});

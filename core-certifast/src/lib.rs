@@ -191,3 +191,91 @@ fn get_image_as_array(_img: DynamicImage) -> Vec<u8> {
 
     return out;
 }
+
+#[wasm_bindgen]
+pub fn print_many_certificate_without_zip(
+    texts: &JsValue,
+    certif_template: &Uint8Array,
+    callback: Function,
+) -> Vec<Uint8Array> {
+    let _ = callback.call1(&JsValue::null(), &JsValue::from_str("load image"));
+    let img = load_image_from_array(&certif_template.to_vec());
+
+    console_error_panic_hook::set_once();
+    let dynamic_texts: Vec<Vec<CanvasDynamicText>> = texts.into_serde().unwrap();
+
+    let mut array_of_images: Vec<Uint8Array> = Vec::new();
+
+    for (index, elem) in dynamic_texts.iter().enumerate() {
+        let mut the_img = img.clone();
+
+        let _ = callback.call1(&JsValue::null(), &JsValue::from_f64(index as f64));
+
+        for text in elem {
+            let CanvasDynamicText {
+                text,
+                x,
+                y,
+                font_fam,
+                font_size,
+                color,
+            } = text;
+
+            let decoded_font_fam = decode(&font_fam).unwrap();
+            let text_color = Rgba([color[0], color[1], color[2], color[3]]);
+            let scale = Scale::uniform(*font_size);
+            let font = Vec::from(decoded_font_fam);
+            let text_font = Font::try_from_vec(font).unwrap();
+
+            draw_text_mut(
+                &mut the_img,
+                text_color,
+                *x as u32,
+                *y as u32,
+                scale,
+                &text_font,
+                &text,
+            );
+        }
+        let image_array = get_image_as_array(the_img);
+        let a = &image_array[..];
+        array_of_images.push(a.into());
+    }
+
+    array_of_images
+}
+
+#[wasm_bindgen]
+pub fn archive(files: Vec<Uint8Array>, file_names: &JsValue, file_format: &str) -> Vec<u8> {
+    let mut archive = Cursor::new(Vec::new());
+    let mut zip = ZipWriter::new(&mut archive);
+    let options = write::FileOptions::default().compression_method(CompressionMethod::Stored);
+    let file_names: Vec<String> = file_names.into_serde().unwrap();
+    for (index, file) in files.iter().enumerate() {
+        let data = file.to_vec();
+        let now_utc = chrono::Local::now();
+        let now = DateTime::from_date_and_time(
+            now_utc.year() as u16,
+            now_utc.month() as u8,
+            now_utc.day() as u8,
+            now_utc.hour() as u8,
+            now_utc.minute() as u8,
+            now_utc.second() as u8,
+        )
+        .unwrap();
+        let file_name = file_names[index].clone();
+
+        zip.start_file(
+            &format!("{}.{}", file_name, file_format),
+            options.last_modified_time(now),
+        )
+        .unwrap();
+        let file = &data[..];
+        zip.write(file).unwrap();
+    }
+    let the_zip = zip.finish().unwrap();
+    the_zip.seek(SeekFrom::Start(0)).unwrap();
+    let mut out = Vec::new();
+    the_zip.read_to_end(&mut out).unwrap();
+    out
+}

@@ -1,61 +1,52 @@
-import {
-  Box,
-  Stack,
-  Flex,
-  Tooltip,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverBody,
-  Portal,
-  PopoverArrow,
-  VStack,
-  Text,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  useDisclosure,
-} from '@chakra-ui/react';
+import { Box, Stack, Flex, Tooltip, useDisclosure, Button, Text } from '@chakra-ui/react';
 import { useAtom } from 'jotai';
 import React from 'react';
-import { BsCursor, BsCursorText, BsExclamationCircle } from 'react-icons/bs';
+import { BsCursor, BsCursorText, BsGear } from 'react-icons/bs';
 import {
   activeToolbar as activeToolbarAtom,
   certifTemplate,
   preventToolbar as preventToolbarAtom,
+  preventCanvasShortcut as preventCanvasShortcutAtom,
 } from 'gstates';
 import { useEffect } from 'react';
 import { useAtomValue } from 'jotai/utils';
 import { useUndo } from 'hooks';
+import { LogoCertifastFull } from 'assets';
+import { COMPONENT_ID } from 'helpers';
+import * as gtag from 'libs/gtag';
+import SettingsModal from './SettingsModal';
 
 const Toolbar = () => {
   const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
   const certTemplate = useAtomValue(certifTemplate);
   const preventToolbar = useAtomValue(preventToolbarAtom);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const preventCanvasShortcut = useAtomValue(preventCanvasShortcutAtom);
+  const {
+    isOpen: isSettingsModalOpen,
+    onOpen: onOpenSettingsModal,
+    onClose: onCloseSettingsModal,
+  } = useDisclosure();
   const { undo, redo } = useUndo();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'y':
-          if (e.ctrlKey || e.metaKey) redo();
-          break;
-        case 'z':
-          if (e.ctrlKey || e.metaKey) undo();
-          break;
-        default:
-          break;
-      }
+      if (!preventCanvasShortcut)
+        switch (e.key) {
+          case 'y':
+            if (e.ctrlKey || e.metaKey) redo();
+            break;
+          case 'z':
+            if (e.ctrlKey || e.metaKey) undo();
+            break;
+          default:
+            break;
+        }
     };
 
     window.addEventListener('keydown', handleKeyDown, { capture: false });
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [preventToolbar, setActiveToolbar, undo, redo]);
+  }, [preventToolbar, setActiveToolbar, undo, redo, preventCanvasShortcut]);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -67,6 +58,9 @@ const Toolbar = () => {
           case 't':
             setActiveToolbar('text');
             break;
+          case 's':
+            onOpenSettingsModal();
+            break;
           default:
             break;
         }
@@ -77,77 +71,108 @@ const Toolbar = () => {
     return () => window.removeEventListener('keypress', handleKeyPress);
   }, [preventToolbar, setActiveToolbar]);
 
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      window.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, []);
+
   return (
     <>
-      <AboutModal isOpen={isOpen} onClose={onClose} />
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => {
+          onCloseSettingsModal();
+        }}
+      />
       <Box
-        background="gray.800"
-        top="0"
-        left="0"
-        w="14"
-        height="100%"
+        background="white"
+        top="3"
+        left="3"
+        height="14"
         position="fixed"
         zIndex="100"
+        borderRadius="md"
+        overflow="hidden"
+        boxShadow="lg"
+        px="4"
+        display="flex"
+        alignItems="center"
+      >
+        <Box maxW="28">
+          <LogoCertifastFull width="100%" />
+        </Box>
+        <Box h="6" w="2px" background="blackAlpha.300" mx="2" />
+        <Text fontWeight="semibold" mx="2">
+          Make Certificate Faster
+        </Text>
+        <Box h="6" w="2px" background="blackAlpha.300" ml="2" mr="4" />
+        <Button
+          onClick={() => {
+            window.open('https://karyakarsa.com/azharalifauzi', '_blank');
+            gtag.event({
+              action: 'checkout_donate',
+              label: 'karya karsa',
+              category: 'engagement',
+              value: 0,
+            });
+          }}
+          zIndex="100"
+          colorScheme="facebook"
+          w="32"
+          size="sm"
+        >
+          Donate
+        </Button>
+      </Box>
+
+      <Box
+        background="white"
+        top="50%"
+        transform="translateY(-50%)"
+        left="3"
+        w="14"
+        height="auto"
+        position="fixed"
+        zIndex="100"
+        borderRadius="md"
+        overflow="hidden"
+        boxShadow="lg"
       >
         <Stack height="100%" spacing="0">
           <ToolbarItem
+            ariaLabel="Move"
             isActive={['move', 'resize'].includes(activeToolbar)}
             label="Move (V)"
             onClick={() => setActiveToolbar('move')}
           >
-            <BsCursor color="white" size="24" style={{ transform: 'rotate(-90deg)' }} />
+            <BsCursor color="black" size="24" style={{ transform: 'rotate(-90deg)' }} />
           </ToolbarItem>
           {certTemplate.file.length > 0 ? (
             <ToolbarItem
               isActive={activeToolbar === 'text'}
               label="Dynamic Text (T)"
               onClick={() => setActiveToolbar('text')}
+              id={COMPONENT_ID.DYNAMIC_TEXT}
+              ariaLabel="Dynamic Text"
             >
-              <BsCursorText color="white" size="24" />
+              <BsCursorText color="black" size="24" />
             </ToolbarItem>
           ) : null}
-          <Box mt="auto !important">
-            <Popover offset={[-10, 5]} placement="right-end">
-              <PopoverTrigger>
-                <Box>
-                  <ToolbarItem label="About">
-                    <BsExclamationCircle color="white" size="24" />
-                  </ToolbarItem>
-                </Box>
-              </PopoverTrigger>
-              <Portal>
-                <PopoverArrow />
-                <PopoverContent background="gray.800" color="white" w="48">
-                  <PopoverBody px="0" fontSize="xs">
-                    <VStack spacing={0} py="1">
-                      <Box
-                        onClick={() => {
-                          const url = import.meta.env.VITE_TUTORIAL_URL as string;
-                          window.open(url, '_blank');
-                        }}
-                        pl="6"
-                        pr="3"
-                        py="1"
-                        w="100%"
-                        _hover={{ background: 'blue.400' }}
-                      >
-                        <Text>Tutorial</Text>
-                      </Box>
-                      <Box
-                        onClick={onOpen}
-                        pl="6"
-                        py="1"
-                        w="100%"
-                        _hover={{ background: 'blue.400' }}
-                      >
-                        <Text>About</Text>
-                      </Box>
-                    </VStack>
-                  </PopoverBody>
-                </PopoverContent>
-              </Portal>
-            </Popover>
-          </Box>
+          <ToolbarItem
+            id={COMPONENT_ID.SETTINGS}
+            label="Settings (S)"
+            onClick={() => onOpenSettingsModal()}
+            ariaLabel="Settings"
+          >
+            <BsGear color="black" size="24" />
+          </ToolbarItem>
         </Stack>
       </Box>
     </>
@@ -161,53 +186,37 @@ interface ToolbarItemProps {
   isActive?: boolean;
   onClick?(): void;
   style?: React.CSSProperties;
+  id?: string;
+  ariaLabel?: string;
 }
 
-const ToolbarItem: React.FC<ToolbarItemProps> = ({ label, isActive, children, onClick, style }) => {
+// eslint-disable-next-line react/display-name
+const ToolbarItem: React.FC<ToolbarItemProps> = ({
+  label,
+  isActive,
+  children,
+  onClick,
+  style,
+  id,
+  ariaLabel,
+}) => {
   return (
-    <Tooltip label={label} placement="right">
+    <Tooltip closeOnMouseDown openDelay={500} label={label} placement="right">
       <Flex
         style={style}
-        _hover={{ background: isActive ? undefined : 'black' }}
+        _hover={{ background: isActive ? undefined : 'blue.200' }}
         justifyContent="center"
         alignItems="center"
         as="button"
         h="14"
         w="14"
-        background={isActive ? 'blue.400' : undefined}
+        background={isActive ? 'blue.200' : undefined}
         onClick={onClick}
+        id={id}
+        aria-label={ariaLabel}
       >
         {children}
       </Flex>
     </Tooltip>
-  );
-};
-
-interface AboutModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
-  return (
-    <Modal isCentered isOpen={isOpen} onClose={onClose}>
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader fontSize="md">About</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody fontSize="sm" pb="8">
-          <Text mb="1" fontWeight="bold">
-            App version:{' '}
-          </Text>
-          <Text mb="4">{import.meta.env.VITE_APP_VERSION}</Text>
-          <Text mb="1" fontWeight="bold">
-            Contact Support:{' '}
-          </Text>
-          <Text>
-            <a href="mailto:certifast.app@gmail.com">certifast.app@gmail.com</a>
-          </Text>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
   );
 };

@@ -18,10 +18,11 @@ import {
   isObjectMoving as isObjectMovingAtom,
   activeEvent,
   multiSelected,
+  newTextJustAddedID,
 } from 'gstates';
 import { v4 as uuid } from 'uuid';
-import { atomWithStorage } from 'jotai/utils';
-import { debounce } from 'helpers';
+import { atomWithStorage, useUpdateAtom } from 'jotai/utils';
+import { debounce, measureText, SIDEBAR_WIDTH } from 'helpers';
 import { useSelectionBox, useUndo } from 'hooks';
 import MultiSelectBox from './MultiSelectBox';
 import ScrollBar from './ScrollBar';
@@ -46,7 +47,7 @@ const Canvas = () => {
   const [mousePosRelativeToTemplate, setMousePosRelativeToTemplate] = useAtom(
     mousePosRelativeToTemplateAtom
   );
-  const [activeToolbar] = useAtom(activeToolbarAtom);
+  const [activeToolbar, setActiveToolbar] = useAtom(activeToolbarAtom);
   const [selected, setSelected] = useAtom(selectedObject);
   const [ctrlKey, setCtrlKey] = useAtom(ctrlKeyAtom);
   const [spaceKey, setSpaceKey] = useAtom(spaceKeyAtom);
@@ -56,6 +57,7 @@ const Canvas = () => {
   const [isObjectMoving, setObjectMoving] = useAtom(isObjectMovingAtom);
   const [event, setEvent] = useAtom(activeEvent);
   const [multiSelectedObj] = useAtom(multiSelected);
+  const setNewTextJustAddedID = useUpdateAtom(newTextJustAddedID);
   const { height, width } = useWindowSize();
   const [initialized, setInitialized] = useState<boolean>(false);
   const [triggerPan, setTriggerPan] = useState<boolean>(false);
@@ -432,14 +434,14 @@ const Canvas = () => {
         // if selected object at the bottom of target
         if (y - _y > 0) {
           rulers.push({
-            x: (x + width - 2) * zoom + 2,
+            x: (x + width - 10) * zoom + 2,
             y: _y * zoom,
             width: '1px',
             height: (height + _height + y - _y - _height) * zoom,
           });
         } else {
           rulers.push({
-            x: (x + width - 2) * zoom + 2,
+            x: (x + width - 10) * zoom + 2,
             y: y * zoom,
             width: '1px',
             height: (height + _height + _y - y - height) * zoom,
@@ -511,14 +513,14 @@ const Canvas = () => {
         if (x - _x > 0) {
           rulers.push({
             x: _x * zoom,
-            y: (y + height - 2) * zoom + 2,
+            y: (y + height - 10) * zoom + 2,
             width: (_width + width + x - _x - _width) * zoom,
             height: '1px',
           });
         } else {
           rulers.push({
             x: x * zoom,
-            y: (y + height - 2) * zoom + 2,
+            y: (y + height - 10) * zoom + 2,
             width: (_width + width + _x - width - x) * zoom,
             height: '1px',
           });
@@ -748,24 +750,34 @@ const Canvas = () => {
         if (type === 'text') count++;
       });
       pushToUndoStack(cObjects);
+      const text = `Text-${count + 1}`;
+      const weight = '400';
+      const family = 'Roboto';
+      const size = 32;
+      const { height, width } = measureText(text, family, size, weight);
       setCObjects({
         ...cObjects,
         [newId]: {
           type: 'text',
           data: {
+            text,
+            weight,
+            family,
+            size,
+            height,
+            width,
             align: 'center',
             color: '#000',
-            family: 'Roboto',
             id: newId,
-            size: 32,
-            text: `Text-${count + 1}`,
-            weight: '400',
             x: mousePosRelativeToTemplate.x,
             y: mousePosRelativeToTemplate.y - (32 * 1.2) / 2,
             isSnapped: false,
           },
         },
       });
+      setNewTextJustAddedID(newId);
+      setActiveToolbar('move');
+      setSelected(newId);
     }
   };
 
@@ -781,7 +793,7 @@ const Canvas = () => {
       <Flex
         background="gray.100"
         height={height}
-        w="calc(100% - 320px)"
+        w={`calc(100% - ${SIDEBAR_WIDTH}px)`}
         justifyContent="center"
         alignItems="center"
       >
@@ -850,6 +862,8 @@ const Canvas = () => {
             draggable={false}
             userSelect="none"
             zIndex="0"
+            alt="Certificate Template"
+            id="certif-template"
           />
           {Object.values(cObjects).map(({ type, data }) => {
             if (type === 'text') return <CanvasText key={data.id} id={data.id} />;
