@@ -199,6 +199,7 @@ const Sidebar = () => {
         URL.revokeObjectURL(url);
         setIsProgressModalOpen(false);
         setProgressState('end');
+        setProgress(0);
         const fileSize = (blob.size / 1024 ** 2).toFixed(2); // send data in megabytes unit
         gtag.customDimension(['certificates_count', 'download_size'], 'generate_certificate', {
           certificates_count: certificateInput.length,

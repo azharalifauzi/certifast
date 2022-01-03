@@ -10,7 +10,7 @@ type WhatsNewData = {
 export const whatsNewData: WhatsNewData[] = [
   {
     title: 'Certifast Official Version 1.0',
-    date: '1 Jan, 2022',
+    date: '3 Jan, 2022',
     content: (
       <Box>
         <Text mb="2">
@@ -26,6 +26,7 @@ export const whatsNewData: WhatsNewData[] = [
           </ListItem>
           <ListItem>Adding a tutorials, so you won&apos;t get lost.</ListItem>
           <ListItem>Feature you want it so bad. Export PDF yaaay 🎉.</ListItem>
+          <ListItem>Improve font placement accuracy on the document.</ListItem>
         </UnorderedList>
         <AspectRatio ratio={4 / 3}>
           <video autoPlay muted playsInline loop>
