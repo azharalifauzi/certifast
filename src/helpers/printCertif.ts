@@ -51,7 +51,12 @@ export const printCertif = (
       ctx.textBaseline = 'alphabetic';
       const textDimOnCanvas = ctx.measureText(text);
 
-      ctx.fillText(text, x, y + textDimOnCanvas.fontBoundingBoxAscent);
+      ctx.fillText(
+        text,
+        x,
+        y +
+          (textDimOnCanvas.fontBoundingBoxAscent ?? textDimOnCanvas.actualBoundingBoxAscent * 1.297) // firefox support, but less accurate
+      );
     });
   }
 

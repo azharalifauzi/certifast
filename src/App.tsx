@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { Fonts, AppFallback } from 'components';
+import { Fonts, AppFallback, FirefoxWarn } from 'components';
 import './App.css';
 import { useAtom } from 'jotai';
 import { certifTemplate } from 'gstates';
@@ -79,6 +79,7 @@ function App() {
 
   return (
     <>
+      <FirefoxWarn />
       <Fonts />
       {isMobile ? (
         <Flex flexDir="column" px="6" h={height} justifyContent="center" alignItems="center">
