@@ -8,6 +8,7 @@
     "build:core": "cd core-certifast && wasm-pack build --target no-modules --out-dir ../public/abi"
   },
   "dependencies": {
+    "@braintree/browser-detection": "^1.12.1",
     "@chakra-ui/react": "^1.6.5",
     "@emotion/react": "^11",
     "@emotion/styled": "^11",

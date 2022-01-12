@@ -449,6 +449,11 @@
     "@babel/helper-validator-identifier" "^7.14.9"
     to-fast-properties "^2.0.0"
 
+"@braintree/browser-detection@^1.12.1":
+  version "1.12.1"
+  resolved "https://registry.yarnpkg.com/@braintree/browser-detection/-/browser-detection-1.12.1.tgz#917af7834ea37615957f0e1eef67def9d0b142db"
+  integrity sha512-i/54qrax5o/WbJJhsE/7qqKE594/kGhR+xSu/w13rT7Mlr/uITkWDXzxffcKQ6l6FQxK0IG0EfgT6TJpWgZcUQ==
+
 "@chakra-ui/accordion@1.3.4":
   version "1.3.4"
   resolved "https://registry.yarnpkg.com/@chakra-ui/accordion/-/accordion-1.3.4.tgz#cb5d279dd5fa8086d8b90ab4a94c915c4ac7107a"
