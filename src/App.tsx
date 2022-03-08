@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { Fonts, AppFallback, FirefoxWarn } from 'components';
 import './App.css';
+import './index.css';
 import { useAtom } from 'jotai';
 import { certifTemplate } from 'gstates';
 import { Box, Flex, Text, useToast, useMediaQuery } from '@chakra-ui/react';
