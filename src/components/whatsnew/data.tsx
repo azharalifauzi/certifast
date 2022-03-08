@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Text, UnorderedList, ListItem, AspectRatio } from '@chakra-ui/react';
+import { Box, Text, UnorderedList, ListItem } from '@chakra-ui/react';
 
 type WhatsNewData = {
   title?: string;
@@ -28,11 +28,16 @@ export const whatsNewData: WhatsNewData[] = [
           <ListItem>Feature you want it so bad. Export PDF yaaay 🎉.</ListItem>
           <ListItem>Improve font placement accuracy on the document.</ListItem>
         </UnorderedList>
-        <AspectRatio ratio={4 / 3}>
-          <video autoPlay muted playsInline loop>
-            <source src="/video/whatsnew/1.0.mp4" type="video/mp4" />
-          </video>
-        </AspectRatio>
+
+        <Box className="youtube-container">
+          <iframe
+            src="https://www.youtube.com/embed/pjdtJ7jOvv0?autoplay=1&mute=1&loop=1&color=white&controls=0&modestbranding=1&playsinline=1&rel=0&enablejsapi=1&playlist=pjdtJ7jOvv0"
+            title="YouTube video player"
+            frameBorder={0}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          ></iframe>
+        </Box>
       </Box>
     ),
   },
