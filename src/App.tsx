@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { Fonts, AppFallback, FirefoxWarn } from 'components';
+import { Fonts, AppFallback, FirefoxWarn, AdsenseBar } from 'components';
 import './App.css';
 import './index.css';
 import { useAtom } from 'jotai';
@@ -111,6 +111,7 @@ function App() {
               </Box>
             )}
             <Sidebar />
+            <AdsenseBar />
             <Toolbar />
             <WhatsNew />
           </Suspense>

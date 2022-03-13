@@ -1,5 +1,6 @@
 import { useEventListener } from '@chakra-ui/hooks';
 import { Box } from '@chakra-ui/layout';
+import { SIDEBAR_WIDTH } from 'helpers';
 import { useAtom } from 'jotai';
 import { useAtomValue } from 'jotai/utils';
 import React, { memo, useMemo, useState, useEffect } from 'react';
@@ -36,7 +37,7 @@ const ScrollBar: React.FC<ScrollBarProps> = ({ windowH, windowW, canvasH, canvas
   useEffect(() => {
     if (!triggerMoveX) {
       const movement = left * -1;
-      const ratio = (scrollBarWidth - windowW + 288) / (windowW - canvasW);
+      const ratio = (scrollBarWidth - windowW + SIDEBAR_WIDTH) / (windowW - canvasW);
       const newX = movement * ratio;
       setTranslateX(newX);
     }
@@ -54,8 +55,8 @@ const ScrollBar: React.FC<ScrollBarProps> = ({ windowH, windowW, canvasH, canvas
       setTop(ratio * newY);
     }
 
-    if (triggerMoveX && newX >= 0 && newX <= windowW - scrollBarWidth - 288) {
-      const ratio = -(windowW - canvasW) / (scrollBarWidth - windowW + 288);
+    if (triggerMoveX && newX >= 0 && newX <= windowW - scrollBarWidth - SIDEBAR_WIDTH) {
+      const ratio = -(windowW - canvasW) / (scrollBarWidth - windowW + SIDEBAR_WIDTH);
 
       setTranslateX(newX);
       setLeft(ratio * newX);
@@ -94,7 +95,7 @@ const ScrollBar: React.FC<ScrollBarProps> = ({ windowH, windowW, canvasH, canvas
         userSelect="none"
         position="fixed"
         top="0"
-        right="296px"
+        right={SIDEBAR_WIDTH + 16}
         height={scrollBarHeight}
         borderRadius="10px"
         width="2"

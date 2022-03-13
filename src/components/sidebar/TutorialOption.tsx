@@ -74,10 +74,12 @@ const TutorialItem: React.FC<TutorialItemProps> = ({ title, description, Icon, o
     >
       <Box>{Icon}</Box>
       <Box textAlign="left">
-        <Text fontSize="md" fontWeight="semibold" mb="1">
+        <Text fontSize="sm" fontWeight="semibold" mb="1">
           {title}
         </Text>
-        <Text color="blackAlpha.700">{description}</Text>
+        <Text fontSize="xs" color="blackAlpha.700">
+          {description}
+        </Text>
       </Box>
     </Grid>
   );

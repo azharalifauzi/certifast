@@ -367,8 +367,8 @@ const Sidebar = () => {
         background="white"
         top={0}
         bottom={0}
-        right={0}
-        w="72"
+        right={320}
+        w="64"
         position="fixed"
         zIndex="100"
         boxShadow="sm"
