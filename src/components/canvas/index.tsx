@@ -28,8 +28,8 @@ import MultiSelectBox from './MultiSelectBox';
 import ScrollBar from './ScrollBar';
 import cloneDeep from 'clone-deep';
 
-const CANVAS_HEIGHT = 10_000;
-const CANVAS_WIDTH = 10_000;
+const CANVAS_HEIGHT = 30_000;
+const CANVAS_WIDTH = 30_000;
 
 export const topCanvas = atom(CANVAS_HEIGHT / 2);
 export const leftCanvas = atom(CANVAS_WIDTH / 2);

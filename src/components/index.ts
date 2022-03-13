@@ -8,5 +8,6 @@ export { default as Loading } from './loading';
 export { default as Fonts } from './fonts';
 export { default as WhatsNew } from './whatsnew';
 export { default as FirefoxWarn } from './firefox-warn';
+export { default as AdsenseBar } from './adsense/adsense-bar';
 
 export * from './fallback';

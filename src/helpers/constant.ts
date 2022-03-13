@@ -4,4 +4,4 @@ export const COMPONENT_ID = {
   ARROW_TUTORIAL: 'arrow-tutorial',
 };
 
-export const SIDEBAR_WIDTH = 288;
+export const SIDEBAR_WIDTH = 256 + 320;
